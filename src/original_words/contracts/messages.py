@@ -4,13 +4,15 @@ No database, UI, network or model dependencies. All validation failures omit
 field values so callers can safely map them to INVALID_INPUT.
 """
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date
 from hashlib import sha256
 import json
 from typing import Literal
 from urllib.parse import quote
 
-CONTRACT_VERSION = "0.1.0-draft"
+from .base import Contract, nonempty, utc as _utc
+
+CONTRACT_VERSION = "0.2.0-draft"
 
 
 def stable_message_id(
@@ -22,12 +24,12 @@ def stable_message_id(
     Without an original ID, seq must be the source's persistent sequence,
     never a row number recomputed for a filtered export.
     """
-    if not source_id or not chat_id:
-        raise ValueError("source and chat identifiers are required")
+    nonempty(source_id, chat_id)
+    if type(content) is not str:
+        raise ValueError("content must be text")
     prefix = f"{quote(source_id, safe='')}:{quote(chat_id, safe='')}:"
     if original_id is not None:
-        if not original_id:
-            raise ValueError("original identifier must not be empty")
+        nonempty(original_id)
         return prefix + "id:" + quote(original_id, safe="")
     if type(seq) is not int or seq < 0:
         raise ValueError("persistent source sequence is required")
@@ -35,18 +37,8 @@ def stable_message_id(
     return prefix + "derived:" + sha256(payload.encode("utf-8")).hexdigest()
 
 
-def _utc(value: str) -> datetime:
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except (ValueError, TypeError):
-        raise ValueError("invalid UTC timestamp") from None
-    if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
-        raise ValueError("timestamp must have UTC offset")
-    return parsed
-
-
 @dataclass(frozen=True, slots=True)
-class Message:
+class Message(Contract):
     message_id: str
     source_id: str
     chat_id: str
@@ -68,6 +60,7 @@ class Message:
     parse_status: Literal["parsed", "partial", "unknown"] = "parsed"
 
     def __post_init__(self) -> None:
+        Contract.__post_init__(self)
         if not self.message_id or not self.source_id or not self.chat_id:
             raise ValueError("message, source and chat identifiers are required")
         if type(self.seq) is not int or self.seq < 0:
@@ -94,7 +87,11 @@ class Message:
             if len(self.timestamp) != 10 or not self.source_timezone:
                 raise ValueError("day precision requires ISO date and source timezone")
         else:
-            _utc(self.timestamp)
+            instant = _utc(self.timestamp)
+            if self.timestamp_precision == "second" and instant.microsecond:
+                raise ValueError("second precision cannot carry fractional seconds")
+            if self.timestamp_precision == "millisecond" and instant.microsecond % 1000:
+                raise ValueError("millisecond precision cannot carry finer fractions")
         if self.timestamp_status == "known" and not self.timestamp_source:
             raise ValueError("known time requires provenance")
 
