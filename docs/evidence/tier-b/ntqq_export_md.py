@@ -321,7 +321,12 @@ def main():
     for cid, c in sorted(convs.items(), key=lambda kv: -len(kv[1]["msgs"])):
         sub = "group" if c["kind"] == "group" else "private"
         p = out / sub / f"{safe(c['name'])}_{safe(str(c['id']))}.md"
-        lines = [f"# {c['name'] or c['id']}", "",
+        lines = ["---", "platform: qq",
+                 f"kind: {'group' if c['kind'] == 'group' else 'private'}",
+                 f"conversation: {json.dumps(c['name'] or str(c['id']), ensure_ascii=False)}",
+                 f"conversation_id: {json.dumps(str(c['id']), ensure_ascii=False)}",
+                 "---",
+                 f"# {c['name'] or c['id']}", "",
                  f"- 类型：{'群聊' if c['kind'] == 'group' else '私聊'}",
                  f"- 会话 ID：`{c['id']}`",
                  f"- 消息数：{len(c['msgs'])}",

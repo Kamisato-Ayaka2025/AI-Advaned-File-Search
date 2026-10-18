@@ -207,6 +207,29 @@ python wechat4_export_md.py --plain ./plain --out ./md --me <own_wxid>
 
 尚未覆盖：图片/语音文件本地化（只标类型）、语音转写、合并转发的内层消息展开、引用消息的原文还原。
 
+
+### 7.2 与 aimem 的 Markdown 契约对齐
+
+按 `FORMAT.md` 逐条实现并用 `validate_format.py` 自动校验：
+
+| # | 规则 | QQ | 微信 |
+| --- | --- | --- | --- |
+| 1 | UTF-8 无 BOM | ✅ | ✅ |
+| 2 | YAML front matter（platform/kind/conversation/conversation_id） | ✅ | ✅ |
+| 3 | `## YYYY-MM-DD` 唯一且升序 | ✅ | ✅ |
+| 4 | 消息头 `**HH:MM:SS · 发言人**` | ✅ | ✅ |
+| 5 | 正文每行 `> ` 开头 | ✅ | ✅ |
+| 6 | 图片 `![图片](<路径>)` / 文件 `📎 [名](<路径>)` | 图片 49 条可链接 | 文件 195 条可链接；图片见下 |
+| 7 | 本地时区 +08:00 | ✅ | ✅ |
+| 8 | 会话文件内无表格 | ✅ | ✅ |
+| 9 | 系统/撤回消息保留占位 | ✅ | ✅ |
+
+校验结果：**QQ 34/34、微信 53/53 全部通过**。
+
+目录布局统一为 `index.md` + `private/` + `group/`；**合并版 `ALL.md` 移到导入目录之外**（`<out>-ALL.md`），因为契约只约定跳过 `index.md`，多会话合并文件会污染解析。
+
+**微信图片的已知限制**：`msg/attach/<会话md5>/<yyyy-mm>/Img/<id>.dat` 是 `wxgf` 私有容器（内含 HEVC），既不是标准图片，其 `<id>` 也不来自消息 XML 中任何可哈希字段（140 条样本、md5/fileid/cdnurl/aeskey 全部 0 命中）。因此暂时保留 `🖼 图片` 占位，不做伪链接。要真正内联渲染，需要实现 `wxgf → 标准图片` 的解码器。
+
 ## 8. 在另一台电脑上复用
 
 ```text
@@ -319,3 +342,4 @@ python wechat4_export_md.py --plain ./plain --out ./md --me <own_wxid>
 - [`wechat4_extract_keys.py`](./wechat4_extract_keys.py)
 - [`wechat4_decrypt.py`](./wechat4_decrypt.py)
 - [`wechat4_export_md.py`](./wechat4_export_md.py)
+- [`validate_format.py`](./validate_format.py)（按契约校验导出目录）
