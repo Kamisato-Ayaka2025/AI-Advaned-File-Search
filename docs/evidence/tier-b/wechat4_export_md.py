@@ -8,10 +8,12 @@ _ap = argparse.ArgumentParser()
 _ap.add_argument("--plain", required=True, help="directory produced by wechat4_decrypt.py")
 _ap.add_argument("--out", required=True, help="output directory for Markdown")
 _ap.add_argument("--me", default="", help="own wxid, rendered as '我'")
+_ap.add_argument("--media", default="", help=".../<wxid>/msg directory for local file links")
 _args = _ap.parse_args()
 SRC = pathlib.Path(_args.plain)
 OUT = pathlib.Path(_args.out)
 ME = _args.me
+MEDIA = pathlib.Path(_args.media) if _args.media else None
 TZ = datetime.timezone(datetime.timedelta(hours=8))
 z = zstd.ZstdDecompressor()
 MAX = 1 << 22
@@ -128,6 +130,20 @@ def decode_content(raw):
 APP_ICONS = {5: "🔗", 6: "📎", 19: "📦", 57: "💬", 62: "👉", 2000: "💸", 2001: "🧧"}
 
 
+FILE_INDEX = {}
+
+
+def index_files():
+    if not MEDIA:
+        return
+    root = MEDIA / "file"
+    if not root.exists():
+        return
+    for p in root.rglob("*"):
+        if p.is_file():
+            FILE_INDEX.setdefault(p.name, p)
+
+
 def render(base, text, app_subtype):
     t = text.strip()
     if base == 1:
@@ -156,6 +172,9 @@ def render(base, text, app_subtype):
         des = strip_tags(tag(t, "des"))
         sub = app_subtype or 0
         icon = APP_ICONS.get(sub, "🔗")
+        if sub == 6 and title and title in FILE_INDEX:
+            rel = os.path.relpath(FILE_INDEX[title], OUT).replace(os.sep, "/")
+            return f"📎 [{title}](<{rel}>)"
         label = title or des or "应用消息"
         if des and des != title and len(des) < 60:
             label += f"（{des}）"
@@ -186,7 +205,9 @@ def main():
     names, groups = load_names()
     convos = load_conversations()
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "chat").mkdir(exist_ok=True)
+    (OUT / "private").mkdir(exist_ok=True)
+    (OUT / "group").mkdir(exist_ok=True)
+    index_files()
 
     buckets = {}
     for shard in ("message__message_0.db", "message__message_1.db"):
@@ -241,8 +262,13 @@ def main():
         else:
             title = names.get(user, user) or user
             kind = "私聊"
+        sub = "group" if user.endswith("@chatroom") else "private"
         fname = f"{safe(title)}_{safe(user)}.md"
-        lines = [f"# {title}", "", f"- 类型：{kind}", f"- 会话 ID：`{user}`",
+        lines = ["---", "platform: wechat",
+                 f"kind: {'group' if sub == 'group' else 'private'}",
+                 f"conversation: {json.dumps(title, ensure_ascii=False)}",
+                 f"conversation_id: {json.dumps(user, ensure_ascii=False)}",
+                 "---", f"# {title}", "", f"- 类型：{kind}", f"- 会话 ID：`{user}`",
                  f"- 消息数：{len(msgs)}",
                  f"- 时间范围：{datetime.datetime.fromtimestamp(msgs[0][1], TZ):%Y-%m-%d %H:%M}"
                  f" ~ {datetime.datetime.fromtimestamp(msgs[-1][1], TZ):%Y-%m-%d %H:%M}", ""]
@@ -255,8 +281,8 @@ def main():
             lines += [f"**{dt:%H:%M:%S} · {who}**", ""]
             lines += ["> " + ln if not ln.startswith(">") else ln for ln in body.split("\n")]
             lines.append("")
-        (OUT / "chat" / fname).write_text("\n".join(lines), encoding="utf-8")
-        index.append((title, kind, len(msgs), f"chat/{fname}"))
+        (OUT / sub / fname).write_text("\n".join(lines), encoding="utf-8")
+        index.append((title, kind, len(msgs), f"{sub}/{fname}"))
         print(f"{title[:38]:40s} {len(msgs):7d}")
 
     total = sum(i[2] for i in index)
@@ -267,7 +293,8 @@ def main():
         idx.append(f"| {title} | {kind} | {n} | [{rel}]({rel}) |")
     (OUT / "index.md").write_text("\n".join(idx), encoding="utf-8")
 
-    with (OUT / "ALL.md").open("w", encoding="utf-8") as f:
+    combined = OUT.parent / f"{OUT.name}-ALL.md"
+    with combined.open("w", encoding="utf-8") as f:
         f.write(f"# 微信聊天记录全量导出\n\n会话：{len(index)}　消息：{total}\n")
         for title, kind, n, rel in index:
             text = (OUT / rel).read_text(encoding="utf-8")
