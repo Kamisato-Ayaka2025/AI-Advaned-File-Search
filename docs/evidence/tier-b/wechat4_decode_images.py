@@ -66,6 +66,11 @@ def main():
         md5 = r["md5"]
         if md5 in mapping:
             continue
+        cached = next(out.glob(f"{md5}.*"), None)
+        if cached and cached.is_file():
+            mapping[md5] = str(cached.resolve())
+            stats["cached"] = stats.get("cached", 0) + 1
+            continue
         try:
             data = pathlib.Path(r["source_path"]).read_bytes()
         except OSError:

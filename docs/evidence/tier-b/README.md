@@ -42,6 +42,7 @@
 
 | 脚本 | 行数 | 作用 | 输入 → 输出 |
 | --- | ---: | --- | --- |
+| [`qqmd.py`](./qqmd.py) | 330 | **统一入口**：编排下列步骤 | 一条命令 → 完整导出 |
 | [`ntqq_export_md.py`](./ntqq_export_md.py) | 362 | QQ 解密 + 解析 + 导出 | 加密 `nt_db/` + `NTQQ_DB_KEY` → Markdown |
 | [`wechat4_extract_keys.py`](./wechat4_extract_keys.py) | 170 | 微信库密钥（只读内存） | `db_storage/` + 运行中的微信 → `keys.json` |
 | [`wechat4_decrypt.py`](./wechat4_decrypt.py) | 111 | 微信库解密 | 快照 + `keys.json` → 明文 SQLite |
@@ -53,7 +54,35 @@
 
 ---
 
-## 4. 五分钟快速开始
+## 4. 一条命令（推荐）
+
+```bash
+python qqmd.py doctor                       # 依赖 / 客户端 / 账号自检
+python qqmd.py wechat all --out ./wechat-markdown
+python qqmd.py qq export --nt-db "<...>/nt_db" --out ./qq --my-uin <UIN>
+python qqmd.py validate ./wechat-markdown
+```
+
+Windows 上可直接双击 `run.cmd`，它只做一件事：检查 Python 后转调 `qqmd.py`。
+
+`wechat all` 自动完成：账号发现 → 取密钥 → 快照 → 解密 22 库 → 媒体索引 →
+取图片密钥 → 解码图片 → 导出 Markdown → 契约校验。密钥只在系统临时目录中短暂存在，
+结束时删除。
+
+**重复运行是增量的**（实测第二次 2.7 s）：
+
+| 场景 | 行为 |
+| --- | --- |
+| 数据库签名未变 | 跳过解密与导出 |
+| 图片已在 `media/` | 跳过解码，只补缺失 |
+| 需要强制重跑 | `--force` |
+
+打包为单文件 exe：`powershell -File build_exe.ps1`（需在 Windows 上装 PyInstaller 与依赖；
+`ffmpeg.exe` 放在 exe 同目录）。当前交付以脚本 + `run.cmd` 为准，exe 构建脚本未在本机验证。
+
+---
+
+## 4.1 分步执行（调试用）
 
 ```bash
 pip install sqlcipher3-binary zstandard cryptography   # ffmpeg 需另装
@@ -99,6 +128,9 @@ python validate_format.py ./wx
 ```
 
 各步骤的失败表现与处置见 [`04-troubleshooting.md`](./04-troubleshooting.md)。
+
+`--work` 指定中间目录（快照、明文库、状态文件 `.qqmd-state.json`），默认在输出同级的
+`qqmd-work/`，可安全删除后重建。
 
 ---
 
