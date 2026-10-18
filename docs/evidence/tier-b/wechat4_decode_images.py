@@ -5,7 +5,7 @@ V2 layout: [6B sig][4B aes_size LE][4B xor_size LE][1B pad][AES-ECB][raw][XOR]
 The AES key is a 16-byte ASCII string cached in Weixin.exe memory; it is NOT
 the aeskey carried by the image message.
 """
-import argparse, json, pathlib, struct, sys
+import argparse, json, pathlib, struct, subprocess, sys
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -53,6 +53,7 @@ def main():
     ap.add_argument("--map", required=True, help="output md5 -> relpath json")
     ap.add_argument("--key", required=True, help="16-byte image AES key")
     ap.add_argument("--xor-key", default=0xAC, type=lambda s: int(s, 0))
+    ap.add_argument("--ffmpeg", default="ffmpeg", help="ffmpeg binary for WXGF (HEVC) frames")
     a = ap.parse_args()
 
     key = a.key.encode()
@@ -76,6 +77,23 @@ def main():
             p = out / f"{md5}.{ext}"
             p.write_bytes(plain)
             mapping[md5] = str(p)
+        elif ext == "wxgf":
+            i = plain.find(b"\x00\x00\x00\x01")
+            if i < 0:
+                stats["wxgf_no_startcode"] = stats.get("wxgf_no_startcode", 0) + 1
+                continue
+            tmp = out / f".{md5}.h265"
+            tmp.write_bytes(plain[i:])
+            png = out / f"{md5}.png"
+            r = subprocess.run([a.ffmpeg, "-y", "-loglevel", "error", "-f", "hevc",
+                                "-i", str(tmp), "-frames:v", "1", str(png)],
+                               capture_output=True)
+            tmp.unlink(missing_ok=True)
+            if r.returncode == 0 and png.exists():
+                mapping[md5] = str(png)
+                stats["wxgf_ok"] = stats.get("wxgf_ok", 0) + 1
+            else:
+                stats["wxgf_fail"] = stats.get("wxgf_fail", 0) + 1
     json.dump(mapping, open(a.map, "w"), ensure_ascii=False)
     print(f"decoded={len(mapping)} " + " ".join(f"{k}={v}" for k, v in sorted(stats.items())))
 
