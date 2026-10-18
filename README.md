@@ -13,6 +13,8 @@
 - [AGENTS.md](AGENTS.md)：贡献者与开发代理指南。
 - [QQ 查找实现路线](docs/decisions/ADR-001-qq-search-route.md)：多粒度召回、两轮 Agent 补查、上下文/时间预算及跨时间验收。
 - [Tier B 聊天记录导出](docs/evidence/tier-b/README.md)：QQ / 微信本地库解密、Markdown 契约、脚本清单与跨机复现步骤。
+- [aimem engine 关键节点](docs/evidence/aimem-engine/2026-10-18-milestone.md)：端到端检索原型、真实数据基准、精排与图片 OCR 结论（研究参考，非产品主线）。
+- [aimem engine 代码](engine/README.md)：独立参考实现；不进入 `src/original_words/`。
 
 ## 三人开发入口
 

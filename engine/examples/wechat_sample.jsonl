@@ -1,0 +1,8 @@
+{"platform": "wechat", "conversation": "设备采购群", "sender": "张经理", "timestamp": "2025-10-12T15:28:00", "text": "新报价已经发给你了，之前那个版本别用了。", "source_id": "wx_1001"}
+{"platform": "wechat", "conversation": "设备采购群", "sender": "我", "timestamp": "2025-10-12T15:31:00", "text": "收到，设备采购方案我按最终版更新。", "source_id": "wx_1002"}
+{"platform": "wechat", "conversation": "设备采购群", "sender": "张经理", "timestamp": "2025-10-12T15:32:00", "text": "附件是报价对比表，周五前给客户。", "attachments": ["报价对比表.xlsx"], "source_id": "wx_1003"}
+{"platform": "wechat", "conversation": "设备采购群", "sender": "李工", "timestamp": "2025-10-13T09:05:00", "text": "服务器那家供应商的交期能压到 20 天吗？", "source_id": "wx_1004"}
+{"platform": "wechat", "conversation": "新能源项目组", "sender": "王总", "timestamp": "2025-08-20T10:00:00", "text": "光伏试点方案先按 500kW 做，Q4 前把设备采购定下来。", "source_id": "wx_2001"}
+{"platform": "wechat", "conversation": "新能源项目组", "sender": "李工", "timestamp": "2025-08-20T10:12:00", "text": "储能部分的预算我重新算一下，明天发群里。", "source_id": "wx_2002"}
+{"platform": "qq", "conversation": "老同学", "sender": "陈同学", "timestamp": "2025-09-01T20:00:00", "text": "上次说的那个显卡过热掉帧的问题，你后来怎么解决的？", "source_id": "qq_3001"}
+{"platform": "qq", "conversation": "老同学", "sender": "我", "timestamp": "2025-09-01T20:05:00", "text": "换了硅脂，又把功耗墙调低了，温度降了十几度。", "source_id": "qq_3002"}
