@@ -49,11 +49,13 @@ class TaskEvent(Contract):
     completed: int = 0
     total: int | None = None
     error: ErrorInfo | None = None
+    seq: int = 0
 
     def __post_init__(self):
         Contract.__post_init__(self)
         nonempty(self.task_id)
         natural(self.completed)
+        natural(self.seq)
         if self.total is not None:
             natural(self.total)
             require(self.completed <= self.total, "progress exceeds total")

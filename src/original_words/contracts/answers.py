@@ -56,9 +56,16 @@ class Answer(Contract):
     citations: tuple[Citation, ...] = ()
     timeline: tuple[TimelineEntry, ...] = ()
     mode: AnswerMode = "local"
+    request_id: str = field(kw_only=True)
+    clarification: str | None = None
 
     def __post_init__(self):
         Contract.__post_init__(self)
+        nonempty(self.request_id)
+        require((self.status == "ambiguous") == (self.clarification is not None),
+                "only ambiguous answer must carry clarification")
+        if self.clarification is not None:
+            nonempty(self.clarification)
         ids = tuple(c.citation_id for c in self.citations)
         unique(ids)
         require(all(set(c.citation_ids) <= set(ids) for c in self.claims),
@@ -104,6 +111,7 @@ class SearchOutcome(Contract):
     def __post_init__(self):
         Contract.__post_init__(self)
         nonempty(self.request_id)
+        require(self.request_id == self.answer.request_id, "answer request ID mismatch")
         for citation in self.answer.citations:
             require(citation.snapshot == self.evidence.snapshot, "citation revision mismatch")
             require(citation.message_id in self.evidence.message_ids, "citation outside evidence")
