@@ -164,6 +164,49 @@ d2c74424 58020000 00488944 2450488b 45004884 4c244848 89442540
 
 ---
 
+
+### 7.1 导出为 Markdown（已打通）
+
+```text
+message_0/1.db 的 Msg_<md5(username)>
+  → session.SessionTable 还原 username（md5 反查）
+  → contact.contact 取备注/昵称；chat_room.ext_buffer 解析群名片
+  → message_content 先 zstd 解压，再按 local_type 渲染
+  → index.md + ALL.md + chat/*.md
+```
+
+要点：
+
+- `local_type` 是**打包值**：`base = local_type & 0xFFFFFFFF`，高位是子类型。
+- `message_content` 几乎全是 **zstd** 帧（`28 b5 2f fd`），必须先解压。
+- 群消息正文带 `wxid_xxx:` 前缀，需剥离后作为发送者兜底。
+- 发送者：`real_sender_id` → `Name2Id` 行号 → username → 显示名（群里优先群名片）。
+
+渲染覆盖的类型：
+
+| base type | 含义 | 渲染 |
+| --- | --- | --- |
+| 1 | 文本 | 原文 |
+| 3 | 图片 | `🖼 图片` |
+| 34 | 语音 | `🎤 语音 Ns` |
+| 42 | 名片 | `👤 名片` |
+| 43 | 视频 | `🎬 视频` |
+| 47 | 表情 | `😀 表情` |
+| 48 | 位置 | `📍 位置：POI` |
+| 49 | 应用消息 | 按子类型给图标 + 标题/描述（链接、文件、引用、转账…） |
+| 50 | 通话 | `☎️ 通话` |
+| 10000 | 系统/撤回 | `— 原文` |
+
+实测：**53 个会话 / 19 159 条消息 / 3.4 MB**，`index.md` + `ALL.md` + 每会话一个文件；自己发的消息渲染为“我”。
+
+随附脚本：[`wechat4_export_md.py`](./wechat4_export_md.py)
+
+```bash
+python wechat4_export_md.py --plain ./plain --out ./md --me <own_wxid>
+```
+
+尚未覆盖：图片/语音文件本地化（只标类型）、语音转写、合并转发的内层消息展开、引用消息的原文还原。
+
 ## 8. 在另一台电脑上复用
 
 ```text
@@ -268,9 +311,11 @@ d2c74424 58020000 00488944 2450488b 45004884 4c244848 89442540
 | 解密耗时 | 12.4 s |
 | `message_0.db` | 48 会话 / 16 015 条 |
 | `message_1.db` | 3 331 行 |
+| Markdown 导出 | 53 会话 / 19 159 条 / 3.4 MB |
 | 快照 | db + wal + shm，80 MB |
 
 随附脚本：
 
 - [`wechat4_extract_keys.py`](./wechat4_extract_keys.py)
 - [`wechat4_decrypt.py`](./wechat4_decrypt.py)
+- [`wechat4_export_md.py`](./wechat4_export_md.py)
