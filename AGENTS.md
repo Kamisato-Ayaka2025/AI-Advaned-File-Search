@@ -9,7 +9,7 @@ Original Words (原话考古) is a planned local-first Windows application for s
 - `README.md`: project status and contributor entry point.
 - `.claude/settings.local.json`: ignored local agent configuration; do not publish it.
 
-No source, tests, or build manifests exist yet. Follow the planned `src/original_words/` layout: A owns connectors/storage/contracts, B owns retrieval/LLM, and C owns UI/application assembly/integration; A also owns security and critical lifecycle coordination as specified in Plan. Consult `Plan.md` before changing shared files.
+Research scripts exist under `docs/evidence/tier-b/`; product source, tests, and build manifests do not yet exist. Do not run research scripts as application entry points. Follow the planned `src/original_words/` layout: A owns connectors/storage/contracts, B owns retrieval/LLM, and C owns UI/application assembly/integration; A also owns security and critical lifecycle coordination as specified in Plan. Consult `Plan.md` before changing shared files.
 
 ## Build, Test, and Development Commands
 
