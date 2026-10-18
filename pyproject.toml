@@ -1,0 +1,39 @@
+[project]
+name = "original-words"
+version = "0.1.0"
+description = "原话考古：面向 Windows 的本地优先 QQ/微信聊天记录检索工具"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "PySide6>=6.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-qt>=4.4",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+original-words = "original_words.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/original_words"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+qt_api = "pyside6"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["docs", "build", "dist", ".venv-ais"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
