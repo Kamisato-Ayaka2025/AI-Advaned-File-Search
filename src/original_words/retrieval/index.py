@@ -189,6 +189,9 @@ class RetrievalIndex:
     def vector_count(self) -> int:
         return len(self._vectors)
 
+    def get_index_revision(self) -> str:
+        return self.revision
+
     # ------------------------------------------------------------------- build
     def build(
         self,

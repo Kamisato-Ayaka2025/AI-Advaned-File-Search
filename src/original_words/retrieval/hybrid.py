@@ -14,7 +14,7 @@ from typing import Iterable, Sequence
 from .embedders import Embedder
 from .index import RetrievalIndex
 from .text import build_fts_query, extract_entities
-from .types import SearchFilters, SearchHit, SearchRequest, SearchResponse
+from .types import SearchHit, SearchRequest, SearchResponse
 
 
 def rrf_fuse(
@@ -47,12 +47,17 @@ class HybridSearcher:
         per_channel: int = 80,
         rrf_k: int = 60,
         pool_size: int = 200,
+        min_vector_score: float = 0.2,
     ) -> None:
         self.index = index
         self.embedder = embedder if embedder is not None else index.embedder
         self.per_channel = per_channel
         self.rrf_k = rrf_k
         self.pool_size = max(pool_size, 1)
+        # A query with no lexical/exact support must not be "answered" by a
+        # low-similarity vector neighbour.  Calibrate this per embedder on the
+        # development set; 0.2 is a conservative starting point.
+        self.min_vector_score = min_vector_score
 
     def search(self, request: SearchRequest) -> SearchResponse:
         started = perf_counter()
@@ -104,11 +109,12 @@ class HybridSearcher:
                 query_vector = self.embedder.encode_queries([semantic])[0]
                 vector_ids = [
                     unit_id
-                    for unit_id, _score in self.index.vector_search(
+                    for unit_id, score in self.index.vector_search(
                         query_vector,
                         limit=self.per_channel,
                         allowed=allowed,
                     )
+                    if score >= self.min_vector_score
                 ]
                 if vector_ids:
                     rankings["vector"] = vector_ids
