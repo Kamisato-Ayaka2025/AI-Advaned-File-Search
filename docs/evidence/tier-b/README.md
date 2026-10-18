@@ -77,8 +77,19 @@ Windows 上可直接双击 `run.cmd`，它只做一件事：检查 Python 后转
 | 图片已在 `media/` | 跳过解码，只补缺失 |
 | 需要强制重跑 | `--force` |
 
-打包为单文件 exe：`powershell -File build_exe.ps1`（需在 Windows 上装 PyInstaller 与依赖；
-`ffmpeg.exe` 放在 exe 同目录）。当前交付以脚本 + `run.cmd` 为准，exe 构建脚本未在本机验证。
+### Windows 单文件 exe（已验证）
+
+```powershell
+powershell -File build_exe.ps1          # 产出 dist\qqmd.exe，约 14 MB
+dist\qqmd.exe doctor
+dist\qqmd.exe wechat all --out .\wechat-markdown
+```
+
+- 构建依赖：`pyinstaller`、`zstandard`、`cryptography`。**不需要 `sqlcipher3`**——
+  exe 会自动改用纯 Python 按页解密（`wechat4_decrypt_pure.py`），实测与 sqlcipher3
+  结果一致（22/22、integrity ok、16 015 条）。
+- `ffmpeg.exe` 可选，放在 exe 同目录即可解 WXGF 图片。
+- 实测：完整流程 62 s，53 会话 / 19 161 条，契约校验 53/53。
 
 ---
 

@@ -287,7 +287,7 @@ def main():
             lines += [f"**{dt:%H:%M:%S} · {who}**", ""]
             lines += ["> " + ln if not ln.startswith(">") else ln for ln in body.split("\n")]
             lines.append("")
-        (OUT / sub / fname).write_text("\n".join(lines), encoding="utf-8")
+        (OUT / sub / fname).write_text("\n".join(lines), encoding="utf-8", newline="\n")
         index.append((title, kind, len(msgs), f"{sub}/{fname}"))
         print(f"{title[:38]:40s} {len(msgs):7d}")
 
@@ -297,10 +297,10 @@ def main():
            "| 会话 | 类型 | 消息数 | 文件 |", "| --- | --- | ---: | --- |"]
     for title, kind, n, rel in index:
         idx.append(f"| {title} | {kind} | {n} | [{rel}]({rel}) |")
-    (OUT / "index.md").write_text("\n".join(idx), encoding="utf-8")
+    (OUT / "index.md").write_text("\n".join(idx), encoding="utf-8", newline="\n")
 
     combined = OUT.parent / f"{OUT.name}-ALL.md"
-    with combined.open("w", encoding="utf-8") as f:
+    with combined.open("w", encoding="utf-8", newline="\n") as f:
         f.write(f"# 微信聊天记录全量导出\n\n会话：{len(index)}　消息：{total}\n")
         for title, kind, n, rel in index:
             text = (OUT / rel).read_text(encoding="utf-8")

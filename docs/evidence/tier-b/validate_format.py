@@ -16,7 +16,7 @@ def check_file(p: pathlib.Path):
         text = raw.decode("utf-8")
     except UnicodeDecodeError:
         return ["1: not UTF-8"]
-    lines = text.split("\n")
+    lines = [ln.rstrip("\r") for ln in text.split("\n")]
 
     # rule 2: YAML front matter
     if not lines or lines[0] != "---":

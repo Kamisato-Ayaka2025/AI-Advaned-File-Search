@@ -21,16 +21,55 @@ Usage
 from __future__ import annotations
 
 import argparse
+import hashlib          # noqa: F401  step scripts run in-process
+import hmac            # noqa: F401
 import json
 import os
 import pathlib
+import re              # noqa: F401
+import sqlite3         # noqa: F401
+import struct          # noqa: F401
+import collections     # noqa: F401
+import datetime        # noqa: F401
+import html            # noqa: F401
+import shutil          # noqa: F401  (already used, kept for clarity)
+import subprocess      # noqa: F401
+import tempfile        # noqa: F401
+import time            # noqa: F401
+import unicodedata     # noqa: F401
+
+import zstandard                                  # noqa: F401
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes  # noqa: F401
+
+try:                                              # Windows-only, absent on WSL
+    import ctypes.wintypes  # noqa: F401
+except ImportError:
+    pass
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
 
-HERE = pathlib.Path(__file__).resolve().parent
+# When frozen by PyInstaller the step scripts are unpacked next to this module.
+HERE = pathlib.Path(getattr(sys, "_MEIPASS", pathlib.Path(__file__).resolve().parent))
+
+
+def _init_console() -> None:
+    """Windows consoles default to GBK; force UTF-8 so Chinese output is readable."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+        ctypes.windll.kernel32.SetConsoleCP(65001)
+    except Exception:
+        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
 STATE_NAME = ".qqmd-state.json"
 
 
@@ -67,11 +106,33 @@ def wsl_to_win(path: str) -> str:
 
 
 def run_win(script: str, args: list[str], quiet: bool = False) -> None:
+    # A frozen build already runs on Windows, so the probe can stay in-process.
+    if getattr(sys, "frozen", False):
+        run(script, [wsl_to_win(a) for a in args], quiet=quiet)
+        return
     run(script, [wsl_to_win(a) for a in args], quiet=quiet, interpreter=find_win_python())
+
+
+def _run_inproc(script: str, args: list[str]) -> None:
+    """Execute a step script inside this process (frozen exe has no interpreter)."""
+    import runpy
+    old = sys.argv[:]
+    sys.argv = [script, *args]
+    try:
+        runpy.run_path(str(HERE / script), run_name="__main__")
+    except SystemExit as e:
+        if e.code not in (0, None):
+            raise SystemExit(f"{script} failed (exit {e.code})")
+    finally:
+        sys.argv = old
 
 
 def run(script: str, args: list[str], quiet: bool = False,
         interpreter: str | None = None) -> None:
+    if getattr(sys, "frozen", False) and interpreter is None:
+        log(f"→ {script} {' '.join(args[:4])}{' …' if len(args) > 4 else ''}")
+        _run_inproc(script, args)
+        return
     cmd = [interpreter or sys.executable, str(HERE / script), *args]
     log(f"→ {script} {' '.join(args[:4])}{' …' if len(args) > 4 else ''}")
     proc = subprocess.run(cmd, capture_output=quiet, text=True)
@@ -156,12 +217,16 @@ def snapshot(db_dir: pathlib.Path, dst: pathlib.Path) -> int:
 def cmd_doctor(args) -> None:
     ok = True
     log("依赖检查")
-    for mod in ("sqlcipher3", "zstandard", "cryptography"):
+    for mod in ("zstandard", "cryptography"):
         good = have_module(mod)
-        print(f"   {mod:14s} {'ok' if good else 'MISSING  → pip install ' + {'sqlcipher3': 'sqlcipher3-binary'}.get(mod, mod)}")
+        print(f"   {mod:14s} {'ok' if good else 'MISSING  → pip install ' + mod}")
         ok &= good
+    print(f"   {'sqlcipher3':14s} {'ok (原生解密)' if have_module('sqlcipher3') else 'absent → 使用纯 Python 解密'}")
 
     ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        local = pathlib.Path(sys.executable).parent / "ffmpeg.exe"
+        ffmpeg = str(local) if local.exists() else None
     print(f"   {'ffmpeg':14s} {'ok' if ffmpeg else 'MISSING  → 仅影响 WXGF 转码'}")
     running = wechat_running()
     print(f"   {'Weixin.exe':14s} {'running' if running else 'NOT RUNNING → 取密钥需要客户端在运行并已登录'}")
@@ -220,7 +285,11 @@ def wechat_pipeline(args) -> None:
             n = snapshot(db_dir, snap)
             log(f"   {n} 个文件")
             plain = work / "plain"
-            run("wechat4_decrypt.py", ["--db-dir", str(snap), "--keys", str(keys), "--out", str(plain)])
+            # Prefer the sqlcipher3 binding when present; otherwise use the pure
+            # page-level decryptor that ships with the exe.
+            decrypter = "wechat4_decrypt.py" if have_module("sqlcipher3") else "wechat4_decrypt_pure.py"
+            log(f"   解密器：{decrypter}")
+            run(decrypter, ["--db-dir", str(snap), "--keys", str(keys), "--out", str(plain)])
 
             # 3) media index
             media_index = work / "media-index.jsonl"
@@ -228,21 +297,30 @@ def wechat_pipeline(args) -> None:
 
             # 4) image key (optional)
             imgkey = tmp / "imgkey.txt"
-            sample = next((p for p in (db_dir.parent / "msg" / "attach").rglob("*.dat")), None)
-            if sample:
+            # The image AES key is cached per session and only after the client
+            # actually decrypts an image, so try several samples.
+            samples = list((db_dir.parent / "msg" / "attach").rglob("*.dat"))[:2]
+            for sample in samples:
+                if imgkey.exists():
+                    break
                 try:
                     run_win("wechat4_find_image_key.py",
                             ["--dat", str(sample), "--out", str(imgkey)], quiet=True)
                 except SystemExit:
-                    log("图片密钥未找到，图片将保留占位")
+                    continue
+            if not imgkey.exists():
+                log("图片密钥未找到：请先在微信里点开 2–3 张图片，再重新运行；"
+                    "本次图片将保留占位")
 
             # 5) decode images (incremental: existing files are skipped by script)
             imgmap = work / "image-map.json"
             if imgkey.exists():
+                ff = shutil.which("ffmpeg") or str(
+                    pathlib.Path(sys.executable).parent / "ffmpeg.exe")
                 run("wechat4_decode_images.py",
                     ["--index", str(media_index), "--out", str(out / "media"),
                      "--map", str(imgmap), "--key", imgkey.read_text().strip(),
-                     "--xor-key", hex(args.xor_key)])
+                     "--xor-key", hex(args.xor_key), "--ffmpeg", ff])
 
             # 6) export markdown
             cmd = ["--plain", str(plain), "--out", str(out), "--me", wxid,
@@ -334,6 +412,7 @@ def build() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    _init_console()
     args = build().parse_args()
     args.func(args)
 

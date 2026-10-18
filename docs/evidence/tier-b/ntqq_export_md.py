@@ -341,7 +341,7 @@ def main():
             lines += ["> " + ln if not ln.startswith(">") else ln
                       for ln in body.split("\n")]
             lines.append("")
-        p.write_text("\n".join(lines), encoding="utf-8")
+        p.write_text("\n".join(lines), encoding="utf-8", newline="\n")
         rows.append((c, p))
 
     idx = ["# QQ 聊天记录导出", "",
@@ -351,7 +351,7 @@ def main():
         rel = p.relative_to(out).as_posix()
         idx.append(f"| {c['name'] or c['id']} | "
                    f"{'群聊' if c['kind'] == 'group' else '私聊'} | {len(c['msgs'])} | [{rel}]({rel}) |")
-    (out / "index.md").write_text("\n".join(idx), encoding="utf-8")
+    (out / "index.md").write_text("\n".join(idx), encoding="utf-8", newline="\n")
 
     shutil.rmtree(tmp, ignore_errors=True)
     print(f"done: {len(rows)} conversations, "
