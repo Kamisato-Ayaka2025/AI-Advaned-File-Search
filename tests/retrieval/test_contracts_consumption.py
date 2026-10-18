@@ -14,7 +14,12 @@ from original_words.contracts.search import (
     SearchSpec,
 )
 from original_words.contracts.services import SearchService
-from original_words.contracts.validation import validate_answer, validate_chunk, validate_evidence
+from original_words.contracts.validation import (
+    validate_answer,
+    validate_chunk,
+    validate_evidence,
+    validate_search_result,
+)
 from original_words.llm.answer import ExtractiveAnswerBuilder
 from original_words.llm.contracts_bridge import to_contract_answer
 from original_words.retrieval import ChunkRecord, HashingEmbedder, MessageRecord, RetrievalIndex
@@ -72,6 +77,7 @@ def test_search_service_consumes_contract_request_and_returns_valid_result(tmp_p
 
         assert result.hits
         assert result.snapshot == SNAPSHOT
+        assert result.time_filter.applied is False
         assert all(hit.index_revision == "idx-1" for hit in result.hits)
         assert "a1" in {message_id for hit in result.hits for message_id in hit.message_ids}
     finally:
@@ -118,7 +124,7 @@ def test_internal_hits_evidence_and_answer_validate_against_contract(tmp_path):
 
         internal_answer = ExtractiveAnswerBuilder(index).build("旧版本", response)
         assert internal_answer.status == "answered"
-        answer = to_contract_answer(internal_answer, SNAPSHOT)
+        answer = to_contract_answer(internal_answer, SNAPSHOT, request_id="req-2")
         validate_answer(answer, evidence, evidence_messages, ("qq",))
         assert answer.status == "answered"
         assert answer.mode == "local"
@@ -184,3 +190,24 @@ def test_gap_search_hit_has_no_text_or_chat_id():
     fields = ContractSearchHit.__dataclass_fields__
     assert "text" not in fields
     assert "chat_id" not in fields
+
+
+def test_bounded_search_discloses_time_filter(tmp_path):
+    index = _index(tmp_path)
+    try:
+        request = ContractRequest(
+            "req-time",
+            "旧版本",
+            ContractFilters(
+                source_ids=("qq",),
+                start="2025-10-01T00:00:00Z",
+                end="2025-11-01T00:00:00Z",
+            ),
+        )
+        service = ContractSearchService(index)
+        spec = service.parse_local(request, snapshot=SNAPSHOT, authorized_source_ids=("qq",))
+        result = service.search(spec)
+        assert result.time_filter.applied is True
+        validate_search_result(spec, result)
+    finally:
+        index.close()

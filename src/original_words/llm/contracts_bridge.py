@@ -15,7 +15,7 @@ from ..contracts.answers import (
 )
 from ..contracts.common import SnapshotRef
 from ..contracts.data import CharSpan
-from ..contracts.sending import SendPlan as ContractSendPlan
+from ..contracts.sending import SendPlan as ContractSendPlan, evidence_digest
 from .answer import Answer as InternalAnswer, Citation as InternalCitation
 from .deepseek import SendPlan as InternalSendPlan
 
@@ -37,7 +37,13 @@ def to_contract_citation(citation: InternalCitation, snapshot: SnapshotRef) -> C
     )
 
 
-def to_contract_answer(answer: InternalAnswer, snapshot: SnapshotRef) -> ContractAnswer:
+def to_contract_answer(
+    answer: InternalAnswer,
+    snapshot: SnapshotRef,
+    *,
+    request_id: str,
+    clarification: str | None = None,
+) -> ContractAnswer:
     if answer.status not in _ALLOWED_STATUS:
         raise ValueError(f"unsupported answer status: {answer.status}")
     citations = tuple(to_contract_citation(citation, snapshot) for citation in answer.citations)
@@ -65,13 +71,21 @@ def to_contract_answer(answer: InternalAnswer, snapshot: SnapshotRef) -> Contrac
         citations=citations,
         timeline=timeline,
         mode=mode,
+        request_id=request_id,
+        clarification=clarification,
     )
 
 
-def to_contract_send_plan(plan: InternalSendPlan) -> ContractSendPlan:
+def to_contract_send_plan(
+    plan: InternalSendPlan,
+    *,
+    snapshot: SnapshotRef,
+    evidence,
+) -> ContractSendPlan:
     purpose = plan.purpose if plan.purpose in _ALLOWED_PURPOSES else "answer"
     mode = plan.mode if plan.mode in _ALLOWED_SEND_MODES else "full"
     scope = (plan.consent_scope,) if isinstance(plan.consent_scope, str) else tuple(plan.consent_scope)
+    scope = tuple(dict.fromkeys((*scope, *evidence.coverage.source_ids)))
     if not scope:
         scope = ("deepseek",)
     return ContractSendPlan(
@@ -84,6 +98,8 @@ def to_contract_send_plan(plan: InternalSendPlan) -> ContractSendPlan:
         model=plan.model,
         endpoint=plan.endpoint,
         consent_scope=scope,
+        snapshot=snapshot,
+        evidence_digest=evidence_digest(evidence),
     )
 
 

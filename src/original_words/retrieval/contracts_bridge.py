@@ -14,7 +14,7 @@ from typing import Sequence
 
 from ..contracts.common import SnapshotRef
 from ..contracts.data import CharSpan, Chunk, Coverage
-from ..contracts.messages import Message
+from ..contracts.messages import Message, TimeFilterInfo
 from ..contracts.search import (
     Candidate,
     EvidenceBundle,
@@ -140,14 +140,17 @@ def to_contract_result(
     snapshot: SnapshotRef,
     *,
     coverage: Coverage | None = None,
+    time_filter: TimeFilterInfo | None = None,
 ) -> ContractResult:
     hits = tuple(to_contract_hit(hit) for hit in response.hits)
+    bounded = request.filters.start is not None or request.filters.end is not None
     return ContractResult(
         request_id=request.request_id,
         snapshot=snapshot,
         hits=hits,
         coverage=coverage or Coverage(source_ids=request.filters.source_ids),
         truncated=False,
+        time_filter=time_filter or TimeFilterInfo(applied=bounded),
     )
 
 
@@ -202,6 +205,9 @@ class ContractSearchService:
             coverage=Coverage(
                 source_ids=spec.authorized_source_ids,
                 completeness="unknown",
+            ),
+            time_filter=TimeFilterInfo(
+                applied=spec.hard_filters.start is not None or spec.hard_filters.end is not None,
             ),
         )
 

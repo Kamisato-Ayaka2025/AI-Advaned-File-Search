@@ -98,3 +98,29 @@
 - **C 的 B1（ChatSummary/list_chats）与 B3（ImportIssue）属 A 的存储/导入契约**：B 不阻塞其设计；B 会消费 `ChatSummary` 显示会话名，并接受 `ImportIssue` 作为覆盖/质量提示的来源，不自行扫描全库枚举会话。
 - **C 的 S10（SearchHit 不含文本）与 B 的 hydration 缺口一致**：B 接受 `Repository.get_chunks` 二次取文本/字符区间的路径，但请 A 在契约说明中写明这是 C 的正式消费方式。
 - **C 的基线过期提醒**：B 评审分支基于 `pr-2` 的 `a333994`；A 更新 main 后 B 会重新合并并重跑，不沿用旧基线绿色结果。
+
+## 契约 0.3.0-draft 复审（PR #2 HEAD 06b9d51）
+
+A 在 `15a1820` / `06b9d51` 中处理了 C 的 B1–B5，并升级到 0.3.0-draft。B 侧已把适配器与消费测试更新到 0.3：
+
+- `Answer` 新增必填 `request_id`、`clarification`（仅 ambiguous）；`SearchOutcome` 校验内外 request_id 一致。
+- `SendPlan` 新增必填 `snapshot` / `evidence_digest`，并提供 `validate_evidence`；B 适配器现在把 evidence 的来源加入 consent_scope。
+- `SearchResult.time_filter` + `TimeFilterInfo` + `exclude_imprecise_v1`；B 适配器对有界查询设置 `applied=True`。
+- `catalog.py`（SourceSummary/ChatSummary/ChatPage/MessagePage）、`ImportIssue`、TaskEvent.seq、ExportReceipt.sha256、MessageEdge.external_target、require_all_messages 等已加入。
+
+验证（B 侧 review 分支）：
+
+```bash
+python -m pytest -q tests/retrieval tests/llm   # 94 passed
+PYTHONPATH=src python -m unittest discover -s tests/contracts -q  # A 73 passed
+```
+
+### B 侧仍待处理
+
+1. **`SearchFilters` 仍缺 `chat_types` 与 `link/voice/emoji`**：0.3 未改变；REQ-022 的群聊/私聊过滤仍无法表达，B 的规则解析产出的 link/voice/emoji 仍只能映射到 `unknown`。
+2. **`Message.timestamp_source/precision` 的来源**：B 内部 `MessageRecord` 仍只有 epoch，适配器继续推断 `retrieval-index`；生产路径必须直接消费 A 的 `Message`，不能用推断值。
+3. **`TimeFilterInfo` 的计数**：契约要求 applied/排除计数；B 的临时 SQLite 索引不保存 precision，只能给 `None`（未统计）。A 的仓储/生产索引必须在完整授权范围内计算，并保证 UI 不把 `None` 显示为 0。
+4. **`AnswerService` 的 `ConsentService.consume(grant, plan, evidence=evidence)` 适配**：契约已就绪，B-02 仍待实现；当前 `DeepSeekClient` 仍是内部 Authorization 测试替身。
+5. **`SearchResult` 文本/会话 hydration**：0.3 的 S10 已明确“首屏命中 message_ids 去重后一次批量 get_messages”，B 接受该路径；C 不应逐条取原文。
+
+B 结论：**0.3 已解决 C 的 B1–B5；B 侧仍不批准在 1/2/3 与 B-02 适配完成前冻结 v1。** 其余为 B-02 实现工作，不是契约阻塞。
