@@ -4,7 +4,7 @@
 当前状态：本轮 A 侧契约实现与测试已完成，REVIEW（待 B/C 独立评审）；P0-01 整体未完成，G1/G5 均未通过。
 分支：codex/p0-a-message-contract。
 工作区：F:/Code/AI_Advanced_File_Search/private/worktrees/p0-a-message-contract。
-基线：b486089；本轮实现提交：1325fa68dab3358859073068ddf25037e623006a。
+原始基线：b486089；发布前已合入 origin/main 5f6dbf6（合并提交 f6333de）；实现提交：1325fa68dab3358859073068ddf25037e623006a。
 本文与最终证据在后续文档提交中保存；当前 HEAD 以 git log -1 为准。
 
 ## 认领与文件边界
@@ -13,7 +13,7 @@
 - A 所有：src/original_words/contracts/、tests/contracts/、tests/fixtures/contracts/、本交接与本任务证据。
 - B/C 的检索、LLM、UI、应用组装、依赖、入口和 CI 均未修改。
 - 原工作区仍在 docs/decoder-informed-plan，AGENTS.md 有用户未提交修改；未覆盖、未暂存、未切换该分支。
-- 本分支开工 fetch 后 origin/main 仍为 b486089；没有推送、创建远端 Issue/PR、向队友发消息或合并。
+- 用户已授权推送和等待评审。PR #2 已发布：https://github.com/Kamisato-Ayaka2025/AI-Advaned-File-Search/pull/2 。GitHub 已确认向 YuanKunlin、Zhong-Yufeng 发出评审请求；未自批、未合并 PR。
 
 ## 已完成
 
@@ -59,7 +59,7 @@ git diff --cached --check 最初发现 EOF 空行，修正后通过。
 2. A 继续 P0 技术探针：与 C 验证 SQLCipher/FTS5/WAL、凭据保护；共享契约通过后再进入 A-01/A-02 实现。真实数据模式维持关闭。
 3. C 建立 Python 3.11 候选环境、锁文件、pytest/Ruff/CI、最小窗口及打包；B 完成本地模型与中文检索探针。
 4. SR0 搜索 DTO 已具备；八个跨时间事件及 B 的评测题仍待补齐，42 个 DTO 样例不等同于事件覆盖或检索质量证据。
-5. 发布时关联 P0-01 与 contract-change。保持 A 不自批自己的变更、串行集成、B/C 确认后才合入。
+5. PR #2 已关联 P0-01，并添加 contract-change 标签。等待 B/C 独立评审；保持 A 不自批、串行集成、双方确认后才合入。
 6. A 协调 C 同步公共文档的微信实验状态：最新报告自述 22/22 页首校验、19/22 完整导出，Plan/README 的旧失败描述已过时；本会话没有独立复现，不能外推目标构建或产品 Gate。
 
 ## 已处理故障
@@ -72,4 +72,13 @@ git diff --cached --check 最初发现 EOF 空行，修正后通过。
 ## Git 收尾
 
 实现提交 1325fa6 已保存全部本轮源码/测试/样例；本记录与证据另作文档提交。
-本轮结束前要求独立工作区 git status 干净；原工作区 AGENTS.md 修改继续保留。没有远端 PR，因此当前 REVIEW 是本地待评审状态，不是已获批准。
+本轮结束前要求独立工作区 git status 干净；原工作区 AGENTS.md 修改继续保留。PR #2 为 OPEN，当前 REVIEW 是远端待评审状态，不是已获批准。
+
+
+## GitHub 发布与评审等待（2026-10-18）
+
+- 已推送 codex/p0-a-message-contract，upstream 为同名 origin 分支。
+- 发布前合入最新 main 5f6dbf6，没有契约冲突；在 f6333de 重跑 52 项测试（0.099s，OK）、15 文件语法/隔离导入检查及 diff 检查，均通过。
+- PR：https://github.com/Kamisato-Ayaka2025/AI-Advaned-File-Search/pull/2 。初始状态 OPEN / CLEAN；两位评审者待处理；reviews 和 statusCheckRollup 均为空，不能称作 CI 通过。
+- 本聊天已创建每小时评审跟进 p0-01-pr；无变化保持安静，有评审/失败/需要用户处理时通知。不会自动合并、自批或修改代码。
+- 当前文档提交只补充发布事实，不改变已验证契约实现。后续以 PR 最新 HEAD 判断评审是否仍有效。
