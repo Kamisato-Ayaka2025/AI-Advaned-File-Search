@@ -30,6 +30,9 @@ dist/
 # Private inputs, runtime data, model weights, and diagnostic output
 private/
 /data/
+/out/
+/exports/
+/snapshots/
 runtime/
 logs/
 models/
