@@ -34,25 +34,73 @@ def verify(key: bytes, page1: bytes) -> bool:
     return h.digest() == page1[PAGE - 64:PAGE]
 
 
-def decrypt_db(src: pathlib.Path, dst: pathlib.Path, key: bytes) -> int:
+def _page_plain(page: bytes, key: bytes, pgno: int) -> bytes:
+    iv = page[PAGE - RESERVE:PAGE - RESERVE + 16]
+    if pgno == 1:
+        ct = page[16:PAGE - RESERVE]
+        dec = Cipher(algorithms.AES(key), modes.CBC(iv)).decryptor()
+        pt = b"SQLite format 3\x00" + dec.update(ct) + dec.finalize()
+    else:
+        ct = page[:PAGE - RESERVE]
+        dec = Cipher(algorithms.AES(key), modes.CBC(iv)).decryptor()
+        pt = dec.update(ct) + dec.finalize()
+    return pt + b"\x00" * RESERVE
+
+
+def _wal_pages(src: pathlib.Path, key: bytes) -> dict[int, bytes]:
+    """Decrypt committed WAL frames: {pgno: plaintext page}."""
+    wal = pathlib.Path(str(src) + "-wal")
+    if not wal.exists():
+        return {}
+    data = wal.read_bytes()
+    if len(data) < 32:
+        return {}
+    magic = struct.unpack_from(">I", data, 0)[0]
+    if magic not in (0x377F0682, 0x377F0683):
+        return {}
+    if struct.unpack_from(">I", data, 8)[0] != PAGE:
+        return {}
+    salt = data[16:24]
+    pages: dict[int, bytes] = {}
+    off = 32
+    while off + 24 + PAGE <= len(data):
+        hdr = data[off:off + 24]
+        pgno = struct.unpack_from(">I", hdr, 0)[0]
+        if hdr[8:16] != salt:
+            break                      # frame belongs to an older WAL generation
+        page = data[off + 24:off + 24 + PAGE]
+        if pgno > 0:
+            pages[pgno] = _page_plain(page, key, pgno)
+        off += 24 + PAGE
+    return pages
+
+
+def decrypt_db(src: pathlib.Path, dst: pathlib.Path, key: bytes) -> tuple[int, int]:
     data = src.read_bytes()
     if len(data) % PAGE:
         raise ValueError(f"{src.name}: size not page aligned")
+    n = len(data) // PAGE
+    frames = _wal_pages(src, key)
+    pages = {}
+    for i in range(n):
+        pages[i + 1] = _page_plain(data[i * PAGE:(i + 1) * PAGE], key, i + 1)
+    # WAL pages override the main file, mirroring what SQLite itself would read.
+    pages.update(frames)
+    total = max(pages) if pages else 0
     out = bytearray()
-    for i in range(len(data) // PAGE):
-        page = data[i * PAGE:(i + 1) * PAGE]
-        iv = page[PAGE - RESERVE:PAGE - RESERVE + 16]
-        if i == 0:
-            ct = page[16:PAGE - RESERVE]
-            dec = Cipher(algorithms.AES(key), modes.CBC(iv)).decryptor()
-            pt = b"SQLite format 3\x00" + dec.update(ct) + dec.finalize()
-        else:
-            ct = page[:PAGE - RESERVE]
-            dec = Cipher(algorithms.AES(key), modes.CBC(iv)).decryptor()
-            pt = dec.update(ct) + dec.finalize()
-        out += pt + b"\x00" * RESERVE
+    for pgno in range(1, total + 1):
+        out += pages.get(pgno, b"\x00" * PAGE)
     dst.write_bytes(out)
-    return len(data) // PAGE
+    return n, len(frames)
+
+
+def wal_frames(src: pathlib.Path) -> int:
+    """Number of committed frames in the -wal file (0 when absent)."""
+    wal = pathlib.Path(str(src) + "-wal")
+    if not wal.exists():
+        return 0
+    size = wal.stat().st_size
+    return max(0, (size - 32) // (24 + PAGE))
 
 
 def main() -> None:
@@ -79,8 +127,9 @@ def main() -> None:
             fail += 1
             continue
         dst = out / rel.replace("\\", "__").replace("/", "__")
-        pages = decrypt_db(src, dst, key)
-        print(f"{rel:42s} ok  pages={pages}")
+        pages, merged = decrypt_db(src, dst, key)
+        note = f"  +{merged} WAL pages" if merged else ""
+        print(f"{rel:42s} ok  pages={pages}{note}")
         ok += 1
     print(f"\nok={ok} failed={fail} -> {out}")
 

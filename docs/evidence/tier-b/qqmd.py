@@ -178,8 +178,9 @@ def wechat_running() -> bool:
 def db_signature(db_dir: pathlib.Path) -> str:
     """Cheap signature: names + sizes + mtimes of the message dbs."""
     parts = []
-    for p in sorted(db_dir.rglob("*.db")):
-        # size only: mtime changes on every WAL write and would defeat skipping
+    # Include -wal: new messages land there first, so main-db size alone would
+    # report "unchanged" while there is fresh data.
+    for p in sorted(list(db_dir.rglob("*.db")) + list(db_dir.rglob("*.db-wal"))):
         parts.append(f"{p.name}:{p.stat().st_size}")
     import hashlib
     return hashlib.sha1("|".join(parts).encode()).hexdigest()
