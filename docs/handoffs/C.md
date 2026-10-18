@@ -71,3 +71,16 @@ cd D:\deepseek\ais-src\AI-Advaned-File-Search-main
 - `Copy-Item` 复制目录到以 `\` 结尾的目标时，可能把目录内容摊到上一级（本轮曾把 `application/*.py` 复制成 `src/original_words/*.py` 的重复文件）；复制后必须 `git status` 核对，重复文件已删除。
 - C 本地编辑区（`AI-Advaned-File-Search-main`）没有 `.git`：任何清理动作都可能丢掉未同步的改动，先确认 clone 里已提交再删。
 - 微信实验状态需要 C 同步公共文档（A 交接第 63 条）：本轮**未做**，等 C-01 的 PR 落地后再统一改 `Plan.md`/`README.md`，避免与 A 的 PR 抢同一批文件。
+
+## 8. 契约 0.3 二次评审（同一回合的第二轮）
+
+A 把 PR #2 从 `a3339945`（0.2.0-draft）更新到 `06b9d516`（0.3.0-draft），并按 C 的 B1–B5 / S1–S10 做了修订（修复说明 `docs/evidence/g1/2026-10-18-P0-01-A-C-review-response.md`）。C 的复核结论：
+
+- **B1–B5 全部实质修复**：会话/来源列表与时间线分页、`Answer.request_id` + `clarification`、`ImportIssue` 明细、`TimeFilterInfo` 披露、`SendPlan.snapshot/evidence_digest` 绑定，逐条用 C 自己的测试验证（证据见 `docs/evidence/g1/2026-10-18-P0-01-C-contract-re-review-0.3.md`）。
+- **C 的消费测试已按迁移说明重写**：`tests/integration/test_contract_consumption.py` 现为 0.3 版 37 项（34 项正向验收 + 3 项缺口探针），原 7 个 `test_gap_*` 全部转成正向验收。
+- **新增 3 项缺口**：F1 `stop_reason="ambiguous"` 与 `answer.status` 未绑定；F2 `TaskEvent.seq` 默认 0 会让漏赋值吞掉进度事件；F3 `SearchFilters` 仍无 `chat_types`（与 B 的评审一致，影响 REQ-022 的"只看群聊/私聊"）。
+- **B4 时间策略 C 已给出正式结论**：接受 `exclude_imprecise_v1`，条件为必须披露两个排除计数（None 显示"未统计"）、必须提供"清除时间条件"入口、计数按完整授权范围统计（列入 G3 抽查）。
+- A 的 73 项在 Python 3.10.11 / 3.13.1 均 OK；标准库隔离检查通过；**Python 3.11 仍未实测**。
+
+C 的处置：把 0.3 复审记录与更新的测试并入 PR #3（评审分支），并在 PR #2 提交第二轮评审意见。C-01 的界面改造仍等 v1 冻结（F1–F3 处理 + B 的 0.3 复审）后开始替换 `application/dtos.py`。
+
