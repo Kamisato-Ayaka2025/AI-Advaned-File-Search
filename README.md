@@ -12,6 +12,7 @@
 - [Plan.md](Plan.md)：三人分工、接口契约、并发管理、GitHub 流程、阶段与验收门槛。
 - [AGENTS.md](AGENTS.md)：贡献者与开发代理指南。
 - [QQ 查找实现路线](docs/decisions/ADR-001-qq-search-route.md)：多粒度召回、两轮 Agent 补查、上下文/时间预算及跨时间验收。
+- [Tier B 聊天记录导出](docs/evidence/tier-b/README.md)：QQ / 微信本地库解密、Markdown 契约、脚本清单与跨机复现步骤。
 
 ## 三人开发入口
 
