@@ -178,10 +178,12 @@ def wechat_running() -> bool:
 def db_signature(db_dir: pathlib.Path) -> str:
     """Cheap signature: names + sizes + mtimes of the message dbs."""
     parts = []
-    # Include -wal: new messages land there first, so main-db size alone would
-    # report "unchanged" while there is fresh data.
+    # Size alone is not enough: WeChat reuses WAL space, so new messages can
+    # leave every size identical. mtime catches that, at the cost of re-running
+    # when the client merely touched a file (acceptable for a manual tool).
     for p in sorted(list(db_dir.rglob("*.db")) + list(db_dir.rglob("*.db-wal"))):
-        parts.append(f"{p.name}:{p.stat().st_size}")
+        st = p.stat()
+        parts.append(f"{p.name}:{st.st_size}:{st.st_mtime_ns}")
     import hashlib
     return hashlib.sha1("|".join(parts).encode()).hexdigest()
 
@@ -412,8 +414,53 @@ def build() -> argparse.ArgumentParser:
     return ap
 
 
+def interactive() -> None:
+    """Double-clicking the exe passes no arguments; keep the window useful."""
+    _init_console()
+    print("=" * 58)
+    print("  qqmd · 微信 / QQ 聊天记录导出")
+    print("=" * 58)
+
+    root = default_root()
+    accounts = find_wechat_accounts(root) if root.exists() else []
+    running = wechat_running()
+    print(f"  数据目录 : {root}")
+    print(f"  账号     : {accounts[0].parent.name if accounts else '未找到'}")
+    print(f"  微信进程 : {'运行中' if running else '未运行（取密钥需要它）'}")
+    print(f"  输出到   : {pathlib.Path.cwd() / 'wechat-markdown'}")
+    print()
+
+    if not accounts:
+        print("未找到微信数据目录，请确认已安装并登录过微信。")
+    elif not running:
+        print("请先打开微信并登录，然后重新运行本程序。")
+    else:
+        try:
+            go = input("回车开始导出，输入 q 退出: ").strip().lower()
+        except EOFError:
+            go = "q"
+        if go != "q":
+            ns = argparse.Namespace(out="./wechat-markdown", work=None, root=str(root),
+                                    account=None, force=False, xor_key=0xAC, step="all")
+            try:
+                wechat_pipeline(ns)
+            except SystemExit as e:
+                print(f"\n[失败] {e}")
+            except Exception as e:  # keep the window open with a readable error
+                print(f"\n[异常] {type(e).__name__}: {e}")
+
+    print()
+    try:
+        input("按回车退出…")
+    except EOFError:
+        pass
+
+
 def main() -> None:
     _init_console()
+    if len(sys.argv) == 1:
+        interactive()
+        return
     args = build().parse_args()
     args.func(args)
 
