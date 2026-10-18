@@ -1,0 +1,49 @@
+# Machine-local agent and editor configuration
+.claude/
+.codex/
+.idea/
+.vscode/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+config.local.*
+
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Private inputs, runtime data, model weights, and diagnostic output
+private/
+/data/
+runtime/
+logs/
+models/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.log
+*.onnx
+*.safetensors
+*.pt
+*.pth
+
+# Local operating system files
+Thumbs.db
+Desktop.ini
