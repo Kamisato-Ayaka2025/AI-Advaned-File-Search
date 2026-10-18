@@ -265,7 +265,33 @@ python wechat4_export_md.py --plain ./plain --out ./md --me <own_wxid>
 
 新增 [`wechat_media_index.py`](./wechat_media_index.py)，输出 `wechat-media-index.jsonl`，每条含 `conversation_id`、`message_id`、`server_id`、`md5`、`source_path`、`match_status`、`decode_status`，遵循“只有验证过的关联才算事实”的原则。
 
-**仍未打通**：V2 外层解密。用消息里的 `aeskey`（16 字节）配合 AES-CBC/ECB 枚举头部偏移 0–32 均未得到标准图片魔数，说明外层还有额外结构（XOR/分段）。这是下一步的独立课题，不影响文本检索。
+### 7.5 V2 外层解密（已打通）
+
+V2 的真实结构（与早前判断不同）：
+
+```
+[6B 签名 07 08 56 32 08 07][4B aes_size LE][4B xor_size LE][1B padding]
+[aligned_aes_size 字节 AES-ECB 段][raw 段（明文）][xor_size 字节 单字节 XOR 段]
+```
+
+- `aligned_aes_size = aes_size + (16 - aes_size % 16)`，数据从 **offset 15** 开始；
+- 末段是**单字节 XOR**，本机实测 XOR key = `0xAC`（用 JPEG EOI 反推，191/193 票一致）；
+- AES key **不是**消息里的 `aeskey`，而是进程内存中一个 **16 字节 ASCII 串**；用「解一段已知 .dat 的 AES 段并检查图片魔数」作为判据扫描，7248 个候选内命中。
+
+实测（521 条已验证路径、按 md5 去重）：
+
+| 内层格式 | 数量 |
+| --- | ---: |
+| WXGF（HEVC，待转码） | 322 |
+| PNG | 156 |
+| JPEG | 37 |
+| 合计可解码 | 193 |
+
+导出后 **199 条消息**（同图多消息）获得真实 `![图片](<../media/xxx.png>)` 链接，681 条仍为占位（WXGF 或未关联）。图片链接 199/199 可访问，`file` 校验为有效 PNG/JPEG。
+
+新增 [`wechat4_decode_images.py`](./wechat4_decode_images.py)。**图片密钥不入库**，通过参数传入。
+
+WXGF 属 HEVC 码流，需要 `ffmpeg` 转码为 PNG/JPEG，属下一阶段（C 层）。
 
 ## 8. 在另一台电脑上复用
 

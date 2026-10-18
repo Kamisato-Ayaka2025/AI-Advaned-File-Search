@@ -9,11 +9,13 @@ _ap.add_argument("--plain", required=True, help="directory produced by wechat4_d
 _ap.add_argument("--out", required=True, help="output directory for Markdown")
 _ap.add_argument("--me", default="", help="own wxid, rendered as '我'")
 _ap.add_argument("--media", default="", help=".../<wxid>/msg directory for local file links")
+_ap.add_argument("--image-map", default="", help="md5 -> decoded image path json")
 _args = _ap.parse_args()
 SRC = pathlib.Path(_args.plain)
 OUT = pathlib.Path(_args.out)
 ME = _args.me
 MEDIA = pathlib.Path(_args.media) if _args.media else None
+IMAGE_MAP = json.load(open(_args.image_map, encoding="utf-8")) if _args.image_map else {}
 TZ = datetime.timezone(datetime.timedelta(hours=8))
 z = zstd.ZstdDecompressor()
 MAX = 1 << 22
@@ -149,6 +151,10 @@ def render(base, text, app_subtype):
     if base == 1:
         return t
     if base == 3:
+        m = re.search(r'md5="([0-9a-f]+)"', t)
+        if m and m.group(1) in IMAGE_MAP:
+            rel = os.path.relpath(IMAGE_MAP[m.group(1)], OUT).replace(os.sep, "/")
+            return f"![图片](<../{rel}>)"
         return "🖼 图片"
     if base == 34:
         ms = attr(t, "voicelength") or "0"

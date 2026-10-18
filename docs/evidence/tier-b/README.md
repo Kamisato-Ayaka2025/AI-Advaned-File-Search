@@ -133,7 +133,7 @@ python validate_format.py ./wechat
 
 | 项 | 状态 |
 | --- | --- |
-| 微信图片内联 | ❌ 缓存是 V2 DAT 外层（`07 08 56 32 08 07`），解密未打通；成功后还需判断内层是 JPEG/PNG/WXGF |
+| 微信图片内联 | ✅ V2 外层已打通：193 张解码（PNG/JPEG），322 张为 WXGF 待 HEVC 转码 |
 | 微信语音 | ⬜ 未做（`media_*.db` 的 `VoiceInfo` 可关联） |
 | 微信 FTS 库 | ⚠️ 私有分词器缺失，`integrity_check` 为 `n/a(fts)`，影子表已导出、索引可重建 |
 | QQ 无正文消息 | 409 条系统/撤回，保留占位不丢 |
