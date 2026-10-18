@@ -9,6 +9,7 @@ from original_words.contracts.search import (
     EvidenceBundle,
     SearchBudget,
     SearchFilters as ContractFilters,
+    SearchHit as ContractSearchHit,
     SearchRequest as ContractRequest,
     SearchSpec,
 )
@@ -170,3 +171,16 @@ def test_evidence_span_outside_message_is_rejected():
     message = to_contract_message(_messages()[0])
     with pytest.raises(ValueError):
         validate_evidence(evidence, (message,), ("qq",))
+
+
+def test_gap_search_filters_have_no_chat_type():
+    # C's B1/REQ-022: group/private filtering cannot be expressed today.
+    assert "chat_types" not in ContractFilters.__dataclass_fields__
+    assert "chat_type" not in ContractFilters.__dataclass_fields__
+
+
+def test_gap_search_hit_has_no_text_or_chat_id():
+    # C's S10 / B's hydration note: C must call Repository.get_chunks.
+    fields = ContractSearchHit.__dataclass_fields__
+    assert "text" not in fields
+    assert "chat_id" not in fields

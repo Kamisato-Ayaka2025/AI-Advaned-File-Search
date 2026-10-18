@@ -6,8 +6,9 @@ from hashlib import sha256
 
 import pytest
 
+from original_words.contracts.answers import Answer as ContractAnswer
 from original_words.contracts.common import SnapshotRef
-from original_words.contracts.sending import ConsentGrant
+from original_words.contracts.sending import ConsentGrant, SendPlan as ContractSendPlan
 from original_words.contracts.validation import validate_answer
 from original_words.llm.answer import ExtractiveAnswerBuilder
 from original_words.llm.contracts_bridge import (
@@ -96,3 +97,19 @@ def test_contract_grant_binds_plan_fingerprint():
     assert grant.plan_fingerprint == plan.fingerprint
     edited = replace(plan, purpose="investigation")
     assert grant.plan_fingerprint != edited.fingerprint
+
+
+def test_gap_answer_has_no_request_id_or_clarification():
+    # C's B2: AnswerService.generate returns Answer, so late-result correlation
+    # and REQ-023 clarification text have no contract home.
+    fields = ContractAnswer.__dataclass_fields__
+    assert "request_id" not in fields
+    assert "clarification" not in fields
+
+
+def test_gap_send_plan_has_no_evidence_digest():
+    # C's B5: prepare_send and generate both take evidence, but the plan cannot
+    # prove that the previewed evidence snapshot is the one being sent.
+    fields = ContractSendPlan.__dataclass_fields__
+    assert "snapshot" not in fields
+    assert "evidence_digest" not in fields

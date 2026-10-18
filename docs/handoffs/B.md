@@ -69,7 +69,7 @@
 - `src/original_words/retrieval/contracts_bridge.py`：内部 Message/Chunk/Hit → 契约 DTO；`ContractSearchService` 实现 A 的 `SearchService.parse_local/search`。
 - `src/original_words/llm/contracts_bridge.py`：内部 Citation/Answer/SendPlan → 契约 DTO；Citation 只保留 `message_id + snapshot + char_span`，不带模型生成的原文/发送者/时间。
 - `tests/retrieval/test_contracts_consumption.py`、`tests/llm/test_contracts_consumption.py`：11 个 B 侧消费测试。
-- 结果：B 89 tests + A 52 tests 全过（Python 3.13；A 的 3.11 语法检查仍通过）。
+- 结果：B 93 tests + A 52 tests 全过（Python 3.13；A 的 3.11 语法检查仍通过）。
 - 已修正 B-02 的发送预览：`preview_text` 现在是实际 UTF-8 JSON 请求体，`payload_hash = SHA-256(preview_text)`，`_http_post` 发送同一串字节；满足 `SendPlan` 的“完整预览指纹”。
 
 ### B 侧确认
@@ -81,9 +81,13 @@
 
 ### 待 A 确认的契约缺口（B 不建议在确认前冻结 v1）
 
+> 与 C 的评审对齐：B4（日期级时间）和 B5（SendPlan 证据版本）同时阻塞；B 追加 B2（Answer request_id/clarification）与 `SearchFilters`/`Message` 的 B 侧缺口。
+
 1. **`SearchFilters` 缺 `chat_types`（group/private）**：REQ-022 要求群聊/私聊过滤，目前只能用 `chat_ids` 逐个列，无法表达“只看群聊”。B 内部有 `chat_types`，契约层丢失。
 2. **`SearchFilters.message_types` 缺 `link/voice/emoji`**：B 的规则解析会产出这三类；契约只有 `text/image/file/system/recalled/unknown`。若映射到 `unknown`，用户按“语音/链接”过滤会失效；建议扩枚举或明确降级规则。
 3. **`SearchResult.hits` 不含 `source_id/chat_id/char_spans`**：C 需再用 `Repository.get_chunks(chunk_ids, snapshot, source_ids)` 二次取片段才能展示来源/会话/引用区间。B 测试已验证该路径可行，但请确认这是契约意图，而不是让 C 从 `SearchHit` 猜。
 4. **`Message` 的 `timestamp_source/precision` 来源**：B 内部 `MessageRecord` 只有 epoch，适配器只能推断 `timestamp_source="retrieval-index"`。真实导入必须保留 A 的原始 provenance/精度；B 建议生产路径直接消费 A 的 `Message`，不要用 B 的推断值。
 5. **日期级过滤策略**：A 当前对有界时间过滤保守排除 `precision=day` 的消息；B 可以接受该保守策略用于 v1，但“3 月份”这类查询会漏掉日期级记录。请产品/A 明确是否接受，或增加独立的日期区间策略。
 6. **`AnswerService.generate` 尚未接 A 的 `ConsentService.consume`**：B 已有 `to_contract_send_plan` 和精确 preview；完整 `AnswerService` 适配（consume → 发送原样字节 → hydrate citations）仍待 B-02 下一步实现。当前 `DeepSeekClient` 仍保留内部 `Authorization` 测试替身，不冒充 A 的授权服务。
+7. **`Answer` 缺 `request_id` / `clarification`**（与 C 的 B2 一致）：`AnswerService.generate` 返回 `Answer`，迟到结果无法按 request_id 丢弃；REQ-023 的追问文案只能放在 `ambiguous` 状态但无处承载。建议 `Answer` 增 `request_id` 和 `clarification`，或让 `generate` 返回 `SearchOutcome`。
+8. **`SendPlan` 未绑定证据快照/摘要**（与 C 的 B5 一致）：`prepare_send` 与 `generate` 两次传 `evidence`，但 plan 里没有 `snapshot`/`evidence_digest`，无法在 DTO 层发现“预览是 revision A、发送是 revision B”。建议 plan 增 `snapshot` 或 `evidence_digest` 并在 `consume`/`generate` 校验。
