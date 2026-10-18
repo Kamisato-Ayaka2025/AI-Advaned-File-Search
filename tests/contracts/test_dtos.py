@@ -26,9 +26,9 @@ class WireTests(unittest.TestCase):
                     obj.unexpected = "mutation"
 
     def test_persisted_wire_examples_match_current_contract(self):
-        path = Path(__file__).parents[1] / "fixtures/contracts/v0_2.json"
+        path = Path(__file__).parents[1] / "fixtures/contracts/v0_3.json"
         wire = json.loads(path.read_text(encoding="utf-8"))
-        self.assertEqual(wire["contract_version"], "0.2.0-draft")
+        self.assertEqual(wire["contract_version"], "0.3.0-draft")
         self.assertEqual(set(wire["examples"]), set(samples()))
         for name, obj in samples().items():
             entry = wire["examples"][name]
@@ -246,7 +246,7 @@ class SendingTests(unittest.TestCase):
     def test_metadata_changes_invalidate_grant_fingerprint(self):
         plan = send_plan()
         for changes in ({"purpose": "investigation"}, {"request_id": "new"},
-                        {"mode": "full"}, {"selected_message_ids": ()},
+                        {"mode": "full"}, {"selected_message_ids": ("another-synthetic-message",)},
                         {"consent_scope": ("other",)},
                         {"endpoint": "https://api.deepseek.com/v1/chat/completions"}):
             self.assertNotEqual(plan.fingerprint, replace(plan, **changes).fingerprint)
@@ -297,7 +297,7 @@ class BoundaryRegressionTests(unittest.TestCase):
 
     def test_deadline_cannot_disguise_incomplete_search_as_not_found(self):
         with self.assertRaises(ValueError):
-            SearchOutcome("r", Answer("not_found"), EvidenceBundle(SNAPSHOT),
+            SearchOutcome("r", Answer("not_found", request_id="r"), EvidenceBundle(SNAPSHOT),
                           "deadline", budget_exhausted=True)
         with self.assertRaises(ValueError):
             replace(samples()["outcome"], stop_reason="no_evidence")

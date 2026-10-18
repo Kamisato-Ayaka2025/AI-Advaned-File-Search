@@ -1,0 +1,1055 @@
+{
+  "contract_version": "0.3.0-draft",
+  "synthetic": true,
+  "examples": {
+    "chat_summary": {
+      "type": "ChatSummary",
+      "value": {
+        "chat_id": "synthetic-chat",
+        "chat_type": "group",
+        "coverage": {
+          "completeness": "partial",
+          "end": null,
+          "source_ids": [
+            "synthetic:account-a"
+          ],
+          "start": null
+        },
+        "display_name": "合成群聊",
+        "first_at": "2026-01-01T00:00:00Z",
+        "last_at": "2026-01-01T00:00:00Z",
+        "message_count": 1,
+        "participants": [
+          "synthetic-person"
+        ],
+        "source_id": "synthetic:account-a"
+      }
+    },
+    "source_summary": {
+      "type": "SourceSummary",
+      "value": {
+        "chat_count": 1,
+        "coverage": {
+          "completeness": "partial",
+          "end": null,
+          "source_ids": [
+            "synthetic:account-a"
+          ],
+          "start": null
+        },
+        "display_name": "合成来源",
+        "message_count": 1,
+        "source_id": "synthetic:account-a"
+      }
+    },
+    "chat_page": {
+      "type": "ChatPage",
+      "value": {
+        "chats": [
+          {
+            "chat_id": "synthetic-chat",
+            "chat_type": "group",
+            "coverage": {
+              "completeness": "partial",
+              "end": null,
+              "source_ids": [
+                "synthetic:account-a"
+              ],
+              "start": null
+            },
+            "display_name": "合成群聊",
+            "first_at": "2026-01-01T00:00:00Z",
+            "last_at": "2026-01-01T00:00:00Z",
+            "message_count": 1,
+            "participants": [
+              "synthetic-person"
+            ],
+            "source_id": "synthetic:account-a"
+          }
+        ],
+        "next_cursor": null,
+        "snapshot": {
+          "dataset_revision": "data-1",
+          "index_revision": "index-1"
+        }
+      }
+    },
+    "message_page": {
+      "type": "MessagePage",
+      "value": {
+        "chat_id": "synthetic-chat",
+        "end": null,
+        "messages": [
+          {
+            "attachment_ref": null,
+            "chat_id": "synthetic-chat",
+            "chat_type": "group",
+            "content": "这是合成证据",
+            "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+            "message_type": "text",
+            "original_timestamp": null,
+            "parse_status": "parsed",
+            "quote_of": null,
+            "raw_payload": null,
+            "sender_id": "synthetic-person",
+            "sender_name": "合成角色",
+            "seq": 1,
+            "source_id": "synthetic:account-a",
+            "source_timezone": "UTC",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "timestamp_precision": "second",
+            "timestamp_source": "fixture",
+            "timestamp_status": "known"
+          }
+        ],
+        "next_cursor": null,
+        "snapshot": {
+          "dataset_revision": "data-1",
+          "index_revision": "index-1"
+        },
+        "source_id": "synthetic:account-a",
+        "start": null,
+        "time_filter": {
+          "applied": false,
+          "date_only_policy": "exclude_imprecise_v1",
+          "excluded_date_only_count": null,
+          "excluded_unknown_time_count": null
+        }
+      }
+    },
+    "time_filter": {
+      "type": "TimeFilterInfo",
+      "value": {
+        "applied": true,
+        "date_only_policy": "exclude_imprecise_v1",
+        "excluded_date_only_count": 2,
+        "excluded_unknown_time_count": 1
+      }
+    },
+    "import_issue": {
+      "type": "ImportIssue",
+      "value": {
+        "code": "missing_field",
+        "detail": "缺少必填字段",
+        "field": "sender_id",
+        "record_ref": "record:7"
+      }
+    },
+    "ambiguous_answer": {
+      "type": "Answer",
+      "value": {
+        "citations": [],
+        "claims": [],
+        "clarification": "请指明会话",
+        "mode": "local",
+        "request_id": "request-1",
+        "status": "ambiguous",
+        "timeline": []
+      }
+    },
+    "message": {
+      "type": "Message",
+      "value": {
+        "attachment_ref": null,
+        "chat_id": "synthetic-chat",
+        "chat_type": "group",
+        "content": "这是合成证据",
+        "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+        "message_type": "text",
+        "original_timestamp": null,
+        "parse_status": "parsed",
+        "quote_of": null,
+        "raw_payload": null,
+        "sender_id": "synthetic-person",
+        "sender_name": "合成角色",
+        "seq": 1,
+        "source_id": "synthetic:account-a",
+        "source_timezone": "UTC",
+        "timestamp": "2026-01-01T00:00:00Z",
+        "timestamp_precision": "second",
+        "timestamp_source": "fixture",
+        "timestamp_status": "known"
+      }
+    },
+    "snapshot": {
+      "type": "SnapshotRef",
+      "value": {
+        "dataset_revision": "data-1",
+        "index_revision": "index-1"
+      }
+    },
+    "span": {
+      "type": "CharSpan",
+      "value": {
+        "end": 3,
+        "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+        "start": 0
+      }
+    },
+    "coverage": {
+      "type": "Coverage",
+      "value": {
+        "completeness": "partial",
+        "end": null,
+        "source_ids": [
+          "synthetic:account-a"
+        ],
+        "start": null
+      }
+    },
+    "chunk": {
+      "type": "Chunk",
+      "value": {
+        "char_spans": [
+          {
+            "end": 3,
+            "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+            "start": 0
+          }
+        ],
+        "chat_id": "synthetic-chat",
+        "chunk_id": "chunk-1",
+        "dataset_revision": "data-1",
+        "end": "2026-01-01T00:00:00Z",
+        "message_ids": [
+          "synthetic%3Aaccount-a:synthetic-chat:id:1"
+        ],
+        "parent_id": null,
+        "participants": [
+          "synthetic-person"
+        ],
+        "source_id": "synthetic:account-a",
+        "start": "2026-01-01T00:00:00Z",
+        "text": "这是合成证据"
+      }
+    },
+    "manifest": {
+      "type": "ImportManifest",
+      "value": {
+        "account_scope": [
+          "synthetic:account-a"
+        ],
+        "adapter_id": "synthetic-json",
+        "adapter_version": "1",
+        "client_build": null,
+        "coverage_end": null,
+        "coverage_start": null,
+        "export_schema": "synthetic-v1",
+        "exported_at": null,
+        "snapshot_hash": "synthetic-snapshot-digest",
+        "source_count": 1,
+        "upstream_tool": null,
+        "upstream_version": null
+      }
+    },
+    "report": {
+      "type": "ImportReport",
+      "value": {
+        "attachment_missing_count": 0,
+        "completeness": "verified_for_scope",
+        "duplicate_count": 0,
+        "imported_count": 1,
+        "issues": [],
+        "issues_truncated": false,
+        "manifest": {
+          "account_scope": [
+            "synthetic:account-a"
+          ],
+          "adapter_id": "synthetic-json",
+          "adapter_version": "1",
+          "client_build": null,
+          "coverage_end": null,
+          "coverage_start": null,
+          "export_schema": "synthetic-v1",
+          "exported_at": null,
+          "snapshot_hash": "synthetic-snapshot-digest",
+          "source_count": 1,
+          "upstream_tool": null,
+          "upstream_version": null
+        },
+        "read_count": 1,
+        "rejected_count": 0,
+        "unknown_count": 0
+      }
+    },
+    "batch": {
+      "type": "ImportBatch",
+      "value": {
+        "batch_id": "batch-1",
+        "manifest": {
+          "account_scope": [
+            "synthetic:account-a"
+          ],
+          "adapter_id": "synthetic-json",
+          "adapter_version": "1",
+          "client_build": null,
+          "coverage_end": null,
+          "coverage_start": null,
+          "export_schema": "synthetic-v1",
+          "exported_at": null,
+          "snapshot_hash": "synthetic-snapshot-digest",
+          "source_count": 1,
+          "upstream_tool": null,
+          "upstream_version": null
+        },
+        "messages": [
+          {
+            "attachment_ref": null,
+            "chat_id": "synthetic-chat",
+            "chat_type": "group",
+            "content": "这是合成证据",
+            "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+            "message_type": "text",
+            "original_timestamp": null,
+            "parse_status": "parsed",
+            "quote_of": null,
+            "raw_payload": null,
+            "sender_id": "synthetic-person",
+            "sender_name": "合成角色",
+            "seq": 1,
+            "source_id": "synthetic:account-a",
+            "source_timezone": "UTC",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "timestamp_precision": "second",
+            "timestamp_source": "fixture",
+            "timestamp_status": "known"
+          }
+        ]
+      }
+    },
+    "import_result": {
+      "type": "ImportResult",
+      "value": {
+        "dataset_revision": "data-1",
+        "report": {
+          "attachment_missing_count": 0,
+          "completeness": "verified_for_scope",
+          "duplicate_count": 0,
+          "imported_count": 1,
+          "issues": [],
+          "issues_truncated": false,
+          "manifest": {
+            "account_scope": [
+              "synthetic:account-a"
+            ],
+            "adapter_id": "synthetic-json",
+            "adapter_version": "1",
+            "client_build": null,
+            "coverage_end": null,
+            "coverage_start": null,
+            "export_schema": "synthetic-v1",
+            "exported_at": null,
+            "snapshot_hash": "synthetic-snapshot-digest",
+            "source_count": 1,
+            "upstream_tool": null,
+            "upstream_version": null
+          },
+          "read_count": 1,
+          "rejected_count": 0,
+          "unknown_count": 0
+        }
+      }
+    },
+    "request": {
+      "type": "SearchRequest",
+      "value": {
+        "filters": {
+          "chat_ids": [],
+          "end": null,
+          "message_types": [],
+          "sender_ids": [],
+          "source_ids": [
+            "synthetic:account-a"
+          ],
+          "start": null
+        },
+        "history_ref": null,
+        "query": "合成问题",
+        "request_id": "request-1",
+        "top_k": 10
+      }
+    },
+    "filters": {
+      "type": "SearchFilters",
+      "value": {
+        "chat_ids": [],
+        "end": null,
+        "message_types": [],
+        "sender_ids": [],
+        "source_ids": [
+          "synthetic:account-a"
+        ],
+        "start": null
+      }
+    },
+    "budget": {
+      "type": "SearchBudget",
+      "value": {
+        "answer_input_tokens": 12000,
+        "answer_output_tokens": 1500,
+        "answer_reserve_seconds": 12.0,
+        "candidate_pool": 200,
+        "cumulative_input_tokens": 24000,
+        "decision_output_tokens": 512,
+        "expansion_messages": 120,
+        "first_decision_input_tokens": 4000,
+        "fused_candidates": 80,
+        "machine_seconds": 30.0,
+        "max_rounds": 2,
+        "queries_per_round": 3,
+        "relation_hops": 2,
+        "remote_calls": 3,
+        "second_decision_input_tokens": 6000,
+        "seeds": 12
+      }
+    },
+    "spec": {
+      "type": "SearchSpec",
+      "value": {
+        "authorized_source_ids": [
+          "synthetic:account-a"
+        ],
+        "budget": {
+          "answer_input_tokens": 12000,
+          "answer_output_tokens": 1500,
+          "answer_reserve_seconds": 12.0,
+          "candidate_pool": 200,
+          "cumulative_input_tokens": 24000,
+          "decision_output_tokens": 512,
+          "expansion_messages": 120,
+          "first_decision_input_tokens": 4000,
+          "fused_candidates": 80,
+          "machine_seconds": 30.0,
+          "max_rounds": 2,
+          "queries_per_round": 3,
+          "relation_hops": 2,
+          "remote_calls": 3,
+          "second_decision_input_tokens": 6000,
+          "seeds": 12
+        },
+        "intent": "question",
+        "request": {
+          "filters": {
+            "chat_ids": [],
+            "end": null,
+            "message_types": [],
+            "sender_ids": [],
+            "source_ids": [
+              "synthetic:account-a"
+            ],
+            "start": null
+          },
+          "history_ref": null,
+          "query": "合成问题",
+          "request_id": "request-1",
+          "top_k": 10
+        },
+        "snapshot": {
+          "dataset_revision": "data-1",
+          "index_revision": "index-1"
+        },
+        "soft_hints": []
+      }
+    },
+    "hit": {
+      "type": "SearchHit",
+      "value": {
+        "chunk_id": "chunk-1",
+        "index_revision": "index-1",
+        "message_ids": [
+          "synthetic%3Aaccount-a:synthetic-chat:id:1"
+        ],
+        "reasons": [
+          "synthetic"
+        ],
+        "score": 0.5
+      }
+    },
+    "candidate": {
+      "type": "Candidate",
+      "value": {
+        "char_spans": [
+          {
+            "end": 3,
+            "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+            "start": 0
+          }
+        ],
+        "chat_id": "synthetic-chat",
+        "hit": {
+          "chunk_id": "chunk-1",
+          "index_revision": "index-1",
+          "message_ids": [
+            "synthetic%3Aaccount-a:synthetic-chat:id:1"
+          ],
+          "reasons": [
+            "synthetic"
+          ],
+          "score": 0.5
+        },
+        "source_id": "synthetic:account-a"
+      }
+    },
+    "result": {
+      "type": "SearchResult",
+      "value": {
+        "coverage": {
+          "completeness": "partial",
+          "end": null,
+          "source_ids": [
+            "synthetic:account-a"
+          ],
+          "start": null
+        },
+        "hits": [
+          {
+            "chunk_id": "chunk-1",
+            "index_revision": "index-1",
+            "message_ids": [
+              "synthetic%3Aaccount-a:synthetic-chat:id:1"
+            ],
+            "reasons": [
+              "synthetic"
+            ],
+            "score": 0.5
+          }
+        ],
+        "request_id": "request-1",
+        "snapshot": {
+          "dataset_revision": "data-1",
+          "index_revision": "index-1"
+        },
+        "time_filter": {
+          "applied": false,
+          "date_only_policy": "exclude_imprecise_v1",
+          "excluded_date_only_count": null,
+          "excluded_unknown_time_count": null
+        },
+        "truncated": false
+      }
+    },
+    "empty_result": {
+      "type": "SearchResult",
+      "value": {
+        "coverage": {
+          "completeness": "partial",
+          "end": null,
+          "source_ids": [
+            "synthetic:account-a"
+          ],
+          "start": null
+        },
+        "hits": [],
+        "request_id": "request-1",
+        "snapshot": {
+          "dataset_revision": "data-1",
+          "index_revision": "index-1"
+        },
+        "time_filter": {
+          "applied": false,
+          "date_only_policy": "exclude_imprecise_v1",
+          "excluded_date_only_count": null,
+          "excluded_unknown_time_count": null
+        },
+        "truncated": false
+      }
+    },
+    "bundle": {
+      "type": "EvidenceBundle",
+      "value": {
+        "char_spans": [
+          {
+            "end": 3,
+            "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+            "start": 0
+          }
+        ],
+        "coverage": {
+          "completeness": "partial",
+          "end": null,
+          "source_ids": [
+            "synthetic:account-a"
+          ],
+          "start": null
+        },
+        "edge_provenance": [],
+        "message_ids": [
+          "synthetic%3Aaccount-a:synthetic-chat:id:1"
+        ],
+        "missing_stages": [],
+        "snapshot": {
+          "dataset_revision": "data-1",
+          "index_revision": "index-1"
+        },
+        "stage_candidates": [
+          {
+            "message_ids": [
+              "synthetic%3Aaccount-a:synthetic-chat:id:1"
+            ],
+            "stage": "problem"
+          }
+        ],
+        "truncated": false
+      }
+    },
+    "stage": {
+      "type": "StageCandidate",
+      "value": {
+        "message_ids": [
+          "synthetic%3Aaccount-a:synthetic-chat:id:1"
+        ],
+        "stage": "problem"
+      }
+    },
+    "edge": {
+      "type": "MessageEdge",
+      "value": {
+        "external_target": false,
+        "from_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+        "provenance": "synthetic-export",
+        "revision": "data-1",
+        "to_id": null,
+        "type": "quote",
+        "unresolved": true
+      }
+    },
+    "decision": {
+      "type": "InvestigationDecision",
+      "value": {
+        "action": "finalize",
+        "clarification": null,
+        "evidence_ids": [
+          "synthetic%3Aaccount-a:synthetic-chat:id:1"
+        ],
+        "expand_message_ids": [],
+        "missing_stages": [],
+        "queries": []
+      }
+    },
+    "citation": {
+      "type": "Citation",
+      "value": {
+        "char_span": {
+          "end": 3,
+          "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+          "start": 0
+        },
+        "citation_id": "citation-1",
+        "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+        "snapshot": {
+          "dataset_revision": "data-1",
+          "index_revision": "index-1"
+        }
+      }
+    },
+    "claim": {
+      "type": "Claim",
+      "value": {
+        "citation_ids": [
+          "citation-1"
+        ],
+        "text": "合成结论"
+      }
+    },
+    "timeline": {
+      "type": "TimelineEntry",
+      "value": {
+        "citation_ids": [
+          "citation-1"
+        ],
+        "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1"
+      }
+    },
+    "answer": {
+      "type": "Answer",
+      "value": {
+        "citations": [
+          {
+            "char_span": {
+              "end": 3,
+              "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+              "start": 0
+            },
+            "citation_id": "citation-1",
+            "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+            "snapshot": {
+              "dataset_revision": "data-1",
+              "index_revision": "index-1"
+            }
+          }
+        ],
+        "claims": [
+          {
+            "citation_ids": [
+              "citation-1"
+            ],
+            "text": "合成结论"
+          }
+        ],
+        "clarification": null,
+        "mode": "demo",
+        "request_id": "request-1",
+        "status": "answered",
+        "timeline": [
+          {
+            "citation_ids": [
+              "citation-1"
+            ],
+            "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1"
+          }
+        ]
+      }
+    },
+    "empty_answer": {
+      "type": "Answer",
+      "value": {
+        "citations": [],
+        "claims": [],
+        "clarification": null,
+        "mode": "local",
+        "request_id": "request-1",
+        "status": "not_found",
+        "timeline": []
+      }
+    },
+    "outcome": {
+      "type": "SearchOutcome",
+      "value": {
+        "answer": {
+          "citations": [
+            {
+              "char_span": {
+                "end": 3,
+                "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+                "start": 0
+              },
+              "citation_id": "citation-1",
+              "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+              "snapshot": {
+                "dataset_revision": "data-1",
+                "index_revision": "index-1"
+              }
+            }
+          ],
+          "claims": [
+            {
+              "citation_ids": [
+                "citation-1"
+              ],
+              "text": "合成结论"
+            }
+          ],
+          "clarification": null,
+          "mode": "demo",
+          "request_id": "request-1",
+          "status": "answered",
+          "timeline": [
+            {
+              "citation_ids": [
+                "citation-1"
+              ],
+              "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1"
+            }
+          ]
+        },
+        "budget_exhausted": false,
+        "evidence": {
+          "char_spans": [
+            {
+              "end": 3,
+              "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+              "start": 0
+            }
+          ],
+          "coverage": {
+            "completeness": "partial",
+            "end": null,
+            "source_ids": [
+              "synthetic:account-a"
+            ],
+            "start": null
+          },
+          "edge_provenance": [],
+          "message_ids": [
+            "synthetic%3Aaccount-a:synthetic-chat:id:1"
+          ],
+          "missing_stages": [],
+          "snapshot": {
+            "dataset_revision": "data-1",
+            "index_revision": "index-1"
+          },
+          "stage_candidates": [
+            {
+              "message_ids": [
+                "synthetic%3Aaccount-a:synthetic-chat:id:1"
+              ],
+              "stage": "problem"
+            }
+          ],
+          "truncated": false
+        },
+        "request_id": "request-1",
+        "stop_reason": "complete",
+        "usage": {
+          "elapsed_seconds": 0.0,
+          "input_tokens": 0,
+          "machine_seconds": 0.0,
+          "output_tokens": 0,
+          "remote_calls": 0,
+          "rounds": 0
+        }
+      }
+    },
+    "usage": {
+      "type": "SearchUsage",
+      "value": {
+        "elapsed_seconds": 0.0,
+        "input_tokens": 0,
+        "machine_seconds": 0.0,
+        "output_tokens": 0,
+        "remote_calls": 0,
+        "rounds": 0
+      }
+    },
+    "send_plan": {
+      "type": "SendPlan",
+      "value": {
+        "consent_scope": [
+          "synthetic:account-a"
+        ],
+        "endpoint": "https://api.deepseek.com/chat/completions",
+        "evidence_digest": "cf0e32f0bb640d4da261d5b0c5c6080ce997393a2c083dc08c8bbf9809576c59",
+        "mode": "partial",
+        "model": "synthetic-model",
+        "payload_hash": "9ef597483c35b0425920ff2548ef4fdb3b2af01cd52074fb95d25b053ddf37d0",
+        "preview_text": "{\"model\":\"synthetic-model\",\"messages\":[{\"role\":\"user\",\"content\":\"合成问题\"}]}",
+        "purpose": "answer",
+        "request_id": "request-1",
+        "selected_message_ids": [
+          "synthetic%3Aaccount-a:synthetic-chat:id:1"
+        ],
+        "snapshot": {
+          "dataset_revision": "data-1",
+          "index_revision": "index-1"
+        }
+      }
+    },
+    "grant": {
+      "type": "ConsentGrant",
+      "value": {
+        "expires_at": "2026-12-01T00:00:00Z",
+        "grant_id": "opaque-synthetic-grant",
+        "plan_fingerprint": "c22551d330e3a9328ba0af66044246be04dffa75fe77b4e06c6b582fe19faf5f"
+      }
+    },
+    "error": {
+      "type": "ErrorInfo",
+      "value": {
+        "code": "INDEX_NOT_READY",
+        "retryable": true,
+        "task_id": "task-1",
+        "user_message": "索引尚未就绪"
+      }
+    },
+    "task": {
+      "type": "TaskEvent",
+      "value": {
+        "completed": 0,
+        "error": {
+          "code": "INDEX_NOT_READY",
+          "retryable": true,
+          "task_id": "task-1",
+          "user_message": "索引尚未就绪"
+        },
+        "request_id": "request-1",
+        "seq": 0,
+        "state": "failed",
+        "task_id": "task-1",
+        "total": null
+      }
+    },
+    "source": {
+      "type": "SourceDescriptor",
+      "value": {
+        "available": true,
+        "display_name": "合成来源",
+        "error": null,
+        "source_id": "synthetic:account-a",
+        "tier": "A"
+      }
+    },
+    "authorization": {
+      "type": "SourceAuthorization",
+      "value": {
+        "authorization_id": "synthetic-source-grant",
+        "source_id": "synthetic:account-a"
+      }
+    },
+    "probe": {
+      "type": "ProbeResult",
+      "value": {
+        "error": null,
+        "manifest": {
+          "account_scope": [
+            "synthetic:account-a"
+          ],
+          "adapter_id": "synthetic-json",
+          "adapter_version": "1",
+          "client_build": null,
+          "coverage_end": null,
+          "coverage_start": null,
+          "export_schema": "synthetic-v1",
+          "exported_at": null,
+          "snapshot_hash": "synthetic-snapshot-digest",
+          "source_count": 1,
+          "upstream_tool": null,
+          "upstream_version": null
+        },
+        "supported": true
+      }
+    },
+    "failed_probe": {
+      "type": "ProbeResult",
+      "value": {
+        "error": {
+          "code": "UNSUPPORTED_FORMAT",
+          "retryable": false,
+          "task_id": null,
+          "user_message": "未知格式"
+        },
+        "manifest": null,
+        "supported": false
+      }
+    },
+    "context": {
+      "type": "ContextResult",
+      "value": {
+        "anchor_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+        "chat_id": "synthetic-chat",
+        "messages": [
+          {
+            "attachment_ref": null,
+            "chat_id": "synthetic-chat",
+            "chat_type": "group",
+            "content": "这是合成证据",
+            "message_id": "synthetic%3Aaccount-a:synthetic-chat:id:1",
+            "message_type": "text",
+            "original_timestamp": null,
+            "parse_status": "parsed",
+            "quote_of": null,
+            "raw_payload": null,
+            "sender_id": "synthetic-person",
+            "sender_name": "合成角色",
+            "seq": 1,
+            "source_id": "synthetic:account-a",
+            "source_timezone": "UTC",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "timestamp_precision": "second",
+            "timestamp_source": "fixture",
+            "timestamp_status": "known"
+          }
+        ],
+        "snapshot": {
+          "dataset_revision": "data-1",
+          "index_revision": "index-1"
+        },
+        "source_id": "synthetic:account-a",
+        "truncated": false
+      }
+    },
+    "index_record": {
+      "type": "IndexRecord",
+      "value": {
+        "chunk_id": "chunk-1",
+        "terms": "合成 证据",
+        "vector": [
+          0.1,
+          0.2
+        ]
+      }
+    },
+    "index_update": {
+      "type": "IndexUpdate",
+      "value": {
+        "chunker_version": "chunker-1",
+        "deleted_chunk_ids": [],
+        "expected_active_revision": null,
+        "model_version": "synthetic-model-1",
+        "records": [
+          {
+            "chunk_id": "chunk-1",
+            "terms": "",
+            "vector": [
+              0.1
+            ]
+          }
+        ],
+        "snapshot": {
+          "dataset_revision": "data-1",
+          "index_revision": "index-1"
+        },
+        "tokenizer_version": "tokenizer-1"
+      }
+    },
+    "cleanup_item": {
+      "type": "CleanupItem",
+      "value": {
+        "error": null,
+        "resource": "database",
+        "status": "absent"
+      }
+    },
+    "cleanup": {
+      "type": "CleanupReport",
+      "value": {
+        "items": [
+          {
+            "error": null,
+            "resource": "database",
+            "status": "absent"
+          },
+          {
+            "error": null,
+            "resource": "index",
+            "status": "absent"
+          },
+          {
+            "error": null,
+            "resource": "attachments",
+            "status": "absent"
+          },
+          {
+            "error": null,
+            "resource": "cache",
+            "status": "absent"
+          },
+          {
+            "error": null,
+            "resource": "logs",
+            "status": "absent"
+          },
+          {
+            "error": null,
+            "resource": "keys",
+            "status": "absent"
+          },
+          {
+            "error": null,
+            "resource": "pending_sends",
+            "status": "absent"
+          }
+        ],
+        "task_id": "delete-1"
+      }
+    },
+    "export": {
+      "type": "ExportReceipt",
+      "value": {
+        "bytes_written": 12,
+        "destination": "synthetic-output.json",
+        "format": "json",
+        "sha256": null
+      }
+    }
+  }
+}

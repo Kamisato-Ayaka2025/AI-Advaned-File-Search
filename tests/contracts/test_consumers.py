@@ -10,19 +10,42 @@ from original_words.contracts.services import (
     AnswerService, ChatSourceConnector, ConsentService, DataLifecycle, ExportAdapter,
     IndexStore, Repository, SearchService, SecretStore,
 )
-from original_words.contracts.sending import ConsentGrant
-from original_words.contracts.validation import validate_answer, validate_chunk, validate_evidence
+from original_words.contracts.sending import ConsentGrant, evidence_digest
+from original_words.contracts.validation import (
+    validate_answer, validate_chunk, validate_evidence, require_all_messages, validate_generated_answer,
+)
 from samples import SOURCE, SNAPSHOT, message, samples, send_plan
 
 
 class SyntheticRepository:
+    def list_sources(self, *, snapshot, source_ids):
+        self.get_messages((), snapshot=snapshot, source_ids=source_ids)
+        return (samples()["source_summary"],)
+
+    def list_chats(self, *, snapshot, source_ids, limit=200, cursor=None):
+        self.get_messages((), snapshot=snapshot, source_ids=source_ids)
+        return samples()["chat_page"]
+
+    def get_message_range(self, source_id, chat_id, *, snapshot, source_ids,
+                          start=None, end=None, limit=200, cursor=None):
+        from original_words.contracts.messages import filter_message_times
+        self.get_messages((), snapshot=snapshot, source_ids=source_ids)
+        if source_id not in source_ids or chat_id != message().chat_id:
+            raise ServiceFailure(ErrorInfo("PERMISSION_DENIED", "合成范围不匹配"))
+        messages, info = filter_message_times((message(),), start, end)
+        return replace(samples()["message_page"], messages=messages, start=start, end=end,
+                       time_filter=info)
+
     def import_batch(self, batch):
         return samples()["import_result"]
 
     def get_messages(self, message_ids, *, snapshot, source_ids):
         if snapshot != SNAPSHOT or source_ids != (SOURCE,):
             raise ServiceFailure(ErrorInfo("PERMISSION_DENIED", "合成范围不匹配"))
-        return tuple(m for m in (message(),) if m.message_id in message_ids)
+        facts = {message().message_id: message()}
+        result = tuple(facts[mid] for mid in message_ids if mid in facts)
+        require_all_messages(message_ids, result)
+        return result
 
     def get_context(self, message_id, *, snapshot, source_ids, before=10, after=10):
         self.get_messages((message_id,), snapshot=snapshot, source_ids=source_ids)
@@ -61,7 +84,8 @@ class SyntheticConsent:
     def validate(self, grant, plan):
         return self.active == grant and grant.plan_fingerprint == plan.fingerprint
 
-    def consume(self, grant, plan):
+    def consume(self, grant, plan, *, evidence):
+        plan.validate_evidence(evidence)
         if not self.validate(grant, plan):
             raise ServiceFailure(ErrorInfo("CONSENT_REQUIRED", "授权失效"))
         self.active = None
@@ -72,12 +96,16 @@ class SyntheticAnswer:
         self.sent_payloads = []
 
     def prepare_send(self, spec, evidence, *, purpose, mode, model, endpoint):
-        return send_plan()
+        return replace(send_plan(), request_id=spec.request.request_id,
+                       snapshot=evidence.snapshot, evidence_digest=evidence_digest(evidence))
 
     def generate(self, plan, grant, *, consent, evidence):
-        consent.consume(grant, plan)
+        plan.validate_evidence(evidence)
+        consent.consume(grant, plan, evidence=evidence)
         self.sent_payloads.append(plan.preview_text.encode("utf-8"))
-        return from_json(Answer, to_json(samples()["answer"]))
+        answer = replace(from_json(Answer, to_json(samples()["answer"])), request_id=plan.request_id)
+        validate_generated_answer(answer, plan.request_id, evidence, (message(),), plan.consent_scope)
+        return answer
 
 
 class SyntheticConnector:

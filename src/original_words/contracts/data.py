@@ -86,6 +86,34 @@ class ImportManifest(Contract):
             natural(self.source_count)
 
 
+
+# Fixed messages keep importer field values out of UI diagnostics and logs.
+ISSUE_DETAILS = {
+    "missing_field": "缺少必填字段", "bad_encoding": "无法解码记录",
+    "unknown_type": "未知消息类型，已保留占位", "bad_time": "时间无效或精度不明确",
+    "bad_quote": "无法解析引用目标",
+}
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class ImportIssue(Contract):
+    code: Literal["missing_field", "bad_encoding", "unknown_type", "bad_time", "bad_quote"]
+    record_ref: str
+    field: str | None
+    detail: str
+
+    def __post_init__(self):
+        Contract.__post_init__(self)
+        # Deliberately use ordinal references, never source paths, raw IDs or values.
+        require(self.record_ref.startswith("record:")
+                and self.record_ref[7:].isascii() and self.record_ref[7:].isdigit()
+                and len(self.record_ref) <= 32, "issue requires sanitized record ordinal")
+        if self.field is not None:
+            require(self.field.isascii() and self.field.isidentifier() and len(self.field) <= 64,
+                    "invalid issue field identifier")
+        require(self.detail == ISSUE_DETAILS[self.code], "issue detail must use safe template")
+
+
 @dataclass(frozen=True, slots=True, repr=False)
 class ImportReport(Contract):
     manifest: ImportManifest
@@ -96,9 +124,12 @@ class ImportReport(Contract):
     unknown_count: int | None
     attachment_missing_count: int | None
     completeness: Completeness = "unknown"
+    issues: tuple[ImportIssue, ...] = ()
+    issues_truncated: bool = False
 
     def __post_init__(self):
         Contract.__post_init__(self)
+        require(len(self.issues) <= 100, "import issue sample exceeds limit")
         counts = (self.read_count, self.imported_count, self.duplicate_count,
                   self.rejected_count, self.unknown_count, self.attachment_missing_count)
         for count in counts:

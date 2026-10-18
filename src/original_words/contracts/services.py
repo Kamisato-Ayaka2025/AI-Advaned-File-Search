@@ -10,6 +10,7 @@ from typing import Iterable, Literal, Protocol, runtime_checkable
 from .answers import Answer
 from .base import Contract, natural, nonempty, require, unique
 from .common import ErrorInfo, SnapshotRef
+from .catalog import ChatPage, MessagePage, SourceSummary
 from .data import Chunk, ImportBatch, ImportManifest, ImportReport, ImportResult
 from .messages import Message
 from .search import EvidenceBundle, SearchRequest, SearchResult, SearchSpec
@@ -137,11 +138,15 @@ class ExportReceipt(Contract):
     destination: str
     format: Literal["markdown", "json"]
     bytes_written: int
+    sha256: str | None = None
 
     def __post_init__(self):
         Contract.__post_init__(self)
         nonempty(self.destination)
         natural(self.bytes_written)
+        if self.sha256 is not None:
+            require(len(self.sha256) == 64 and all(c in "0123456789abcdef" for c in self.sha256),
+                    "invalid export digest")
 
 
 @runtime_checkable
@@ -165,11 +170,32 @@ class ExportAdapter(Protocol):
 
 @runtime_checkable
 class Repository(Protocol):
+    def list_sources(self, *, snapshot: SnapshotRef,
+                     source_ids: tuple[str, ...]) -> tuple[SourceSummary, ...]: ...
+    def list_chats(self, *, snapshot: SnapshotRef, source_ids: tuple[str, ...],
+                   limit: int = 200, cursor: str | None = None) -> ChatPage:
+        """Opaque cursor binds snapshot/scope/order; reject changed or expired cursors."""
+        ...
+    def get_message_range(self, source_id: str, chat_id: str, *, snapshot: SnapshotRef,
+                          source_ids: tuple[str, ...], start: str | None = None,
+                          end: str | None = None, limit: int = 200,
+                          cursor: str | None = None) -> MessagePage:
+        """Limit 1..200. Enforce source scope; disclose full-scope time exclusions.
+
+        Order known instants by UTC/seq/ID, then date-only by source date/seq/ID,
+        then unknown by seq/ID. Cursor binds this order and the full query.
+        """
+        ...
     def import_batch(self, batch: ImportBatch) -> ImportResult:
         """Single writer; deterministic dedup and facts/revision commit together."""
         ...
     def get_messages(self, message_ids: tuple[str, ...], *, snapshot: SnapshotRef,
-                     source_ids: tuple[str, ...]) -> tuple[Message, ...]: ...
+                     source_ids: tuple[str, ...]) -> tuple[Message, ...]:
+        """Return every requested ID in request order or raise REVISION_MISMATCH.
+
+        Reject out-of-scope reads with PERMISSION_DENIED; never silently drop IDs.
+        """
+        ...
     def get_context(self, message_id: str, *, snapshot: SnapshotRef,
                     source_ids: tuple[str, ...], before: int = 10,
                     after: int = 10) -> ContextResult: ...
@@ -206,7 +232,9 @@ class AnswerService(Protocol):
                  consent: "ConsentService", evidence: EvidenceBundle) -> Answer:
         """Atomically consume consent immediately before sending exact preview bytes.
 
-        Validate/hydrate citations from the pinned repository snapshot. No automatic
+        Revalidate plan/evidence before consume(grant, plan, evidence=evidence).
+        Validate/hydrate citations from the pinned repository snapshot.
+        Returned Answer.request_id must equal plan.request_id. No automatic
         retry of requests with uncertain send status. New payload requires new consent.
         """
         ...
@@ -219,10 +247,13 @@ class ConsentService(Protocol):
     def validate(self, grant: ConsentGrant, plan: SendPlan) -> bool:
         """Read-only check; insufficient by itself to authorize a send."""
         ...
-    def consume(self, grant: ConsentGrant, plan: SendPlan) -> None:
+    def consume(self, grant: ConsentGrant, plan: SendPlan, *,
+                evidence: EvidenceBundle) -> None:
         """Atomic one-shot check/consume of stored grant, expiry and revocation.
 
-        Must recheck scope and fingerprint; failure raises CONSENT_REQUIRED.
+        First run plan.validate_evidence(evidence), then atomically recheck scope,
+        fingerprint, expiry and revocation. Mismatch must not consume the grant.
+        Other authorization failure raises CONSENT_REQUIRED.
         Grant DTO possession is not proof of a valid stored authorization.
         """
         ...
@@ -241,4 +272,15 @@ class DataLifecycle(Protocol):
                format: Literal["markdown", "json"]) -> ExportReceipt: ...
     def delete(self, *, task_id: str, user_confirmed: bool) -> CleanupReport:
         """Maintenance lock, cancel/wait, invalidate sends, then clean every resource."""
+        ...
+
+
+@runtime_checkable
+class TaskControl(Protocol):
+    def cancel(self, task_id: str) -> None:
+        """A coordinator owns cooperative, idempotent cancellation; C invokes it.
+
+        Unknown/completed IDs are no-ops. Never kill a worker; terminal TaskEvent
+        confirms completion, and increasing seq lets the UI ignore late events.
+        """
         ...

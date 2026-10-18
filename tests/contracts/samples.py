@@ -3,9 +3,10 @@ from hashlib import sha256
 
 from original_words.contracts.common import ErrorInfo, SnapshotRef, TaskEvent
 from original_words.contracts.data import (
-    CharSpan, Chunk, Coverage, ImportBatch, ImportManifest, ImportReport, ImportResult,
+    CharSpan, Chunk, Coverage, ImportBatch, ImportManifest, ImportReport, ImportResult, ImportIssue,
 )
-from original_words.contracts.messages import Message, stable_message_id
+from original_words.contracts.messages import Message, TimeFilterInfo, stable_message_id
+from original_words.contracts.catalog import ChatSummary, SourceSummary, ChatPage, MessagePage
 from original_words.contracts.search import (
     Candidate, EvidenceBundle, InvestigationDecision, MessageEdge, SearchBudget,
     SearchFilters, SearchHit, SearchRequest, SearchResult, SearchSpec, StageCandidate,
@@ -13,7 +14,7 @@ from original_words.contracts.search import (
 from original_words.contracts.answers import (
     Answer, Citation, Claim, SearchOutcome, SearchUsage, TimelineEntry,
 )
-from original_words.contracts.sending import ConsentGrant, SendPlan
+from original_words.contracts.sending import ConsentGrant, SendPlan, evidence_digest
 from original_words.contracts.services import (
     CleanupItem, CleanupReport, ContextResult, ExportReceipt, IndexRecord, IndexUpdate,
     ProbeResult, SourceAuthorization, SourceDescriptor,
@@ -33,11 +34,19 @@ def message(seq=1, chat="synthetic-chat"):
     )
 
 
+def evidence_bundle():
+    msg = message()
+    return EvidenceBundle(SNAPSHOT, (msg.message_id,), (CharSpan(msg.message_id, 0, 3),),
+                          (StageCandidate("problem", (msg.message_id,)),),
+                          coverage=Coverage((SOURCE,), completeness="partial"))
+
+
 def send_plan():
     body = '{"model":"synthetic-model","messages":[{"role":"user","content":"合成问题"}]}'
     return SendPlan("request-1", "answer", "partial", sha256(body.encode()).hexdigest(),
                     (message().message_id,), body, "synthetic-model",
-                    "https://api.deepseek.com/chat/completions", (SOURCE,))
+                    "https://api.deepseek.com/chat/completions", (SOURCE,),
+                    snapshot=SNAPSHOT, evidence_digest=evidence_digest(evidence_bundle()))
 
 
 def samples():
@@ -57,13 +66,22 @@ def samples():
                             coverage=coverage)
     citation = Citation("citation-1", msg.message_id, SNAPSHOT, span)
     answer = Answer("answered", (Claim("合成结论", ("citation-1",)),), (citation,),
-                    (TimelineEntry(msg.message_id, ("citation-1",)),), "demo")
+                    (TimelineEntry(msg.message_id, ("citation-1",)),), "demo", request_id="request-1")
     plan = send_plan()
     error = ErrorInfo("INDEX_NOT_READY", "索引尚未就绪", True, "task-1")
     cleanup = CleanupReport("delete-1", tuple(CleanupItem(resource, "absent") for resource in
                             ("database", "index", "attachments", "cache", "logs",
                              "keys", "pending_sends")))
+    chat = ChatSummary(SOURCE, msg.chat_id, "group", "合成群聊", (msg.sender_id,), 1,
+                       msg.timestamp, msg.timestamp, coverage)
     return {
+        "chat_summary": chat,
+        "source_summary": SourceSummary(SOURCE, "合成来源", 1, 1, coverage),
+        "chat_page": ChatPage(SNAPSHOT, (chat,)),
+        "message_page": MessagePage(SNAPSHOT, SOURCE, msg.chat_id, (msg,)),
+        "time_filter": TimeFilterInfo(True, 1, 2),
+        "import_issue": ImportIssue("missing_field", "record:7", "sender_id", "缺少必填字段"),
+        "ambiguous_answer": Answer("ambiguous", request_id="request-1", clarification="请指明会话"),
         "message": msg, "snapshot": SNAPSHOT, "span": span, "coverage": coverage,
         "chunk": chunk, "manifest": manifest, "report": report,
         "batch": ImportBatch("batch-1", manifest, (msg,)),
@@ -78,7 +96,7 @@ def samples():
                             "data-1", True),
         "decision": InvestigationDecision("finalize", (msg.message_id,)),
         "citation": citation, "claim": answer.claims[0], "timeline": answer.timeline[0],
-        "answer": answer, "empty_answer": Answer("not_found"),
+        "answer": answer, "empty_answer": Answer("not_found", request_id="request-1"),
         "outcome": SearchOutcome(request.request_id, answer, bundle, "complete"),
         "usage": SearchUsage(), "send_plan": plan,
         "grant": ConsentGrant("opaque-synthetic-grant", plan.fingerprint,

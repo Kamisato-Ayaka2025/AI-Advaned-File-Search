@@ -5,9 +5,10 @@ This validates identity, scope and character bounds, not semantic claim support.
 """
 from .answers import Answer
 from .base import require
+from .common import ErrorInfo, ServiceFailure
 from .data import Chunk
 from .messages import Message
-from .search import EvidenceBundle
+from .search import EvidenceBundle, SearchResult, SearchSpec
 
 
 def _facts(messages: tuple[Message, ...], allowed: tuple[str, ...]) -> dict[str, Message]:
@@ -56,3 +57,27 @@ def validate_answer(answer: Answer, bundle: EvidenceBundle, messages: tuple[Mess
                 require(cursor >= span.end, "citation exceeds selected evidence spans")
         else:
             require(not permitted, "partial evidence requires an explicit citation span")
+
+
+def require_all_messages(requested_ids: tuple[str, ...], messages: tuple[Message, ...]) -> None:
+    """Postcondition for batch reads; no message identifiers in the error."""
+    if tuple(m.message_id for m in messages) != requested_ids:
+        raise ServiceFailure(ErrorInfo("REVISION_MISMATCH", "消息集合与请求不一致，请重新查询"))
+
+
+def validate_generated_answer(answer: Answer, request_id: str, bundle: EvidenceBundle,
+                              messages: tuple[Message, ...],
+                              authorized_source_ids: tuple[str, ...]) -> None:
+    if answer.request_id != request_id:
+        raise ServiceFailure(ErrorInfo("REVISION_MISMATCH", "回答所属请求已变化"))
+    validate_answer(answer, bundle, messages, authorized_source_ids)
+
+
+def validate_search_result(spec: SearchSpec, result: SearchResult) -> None:
+    """The service must disclose imprecise-time exclusion even when counts are unknown."""
+    if result.request_id != spec.request.request_id or result.snapshot != spec.snapshot:
+        raise ServiceFailure(ErrorInfo("REVISION_MISMATCH", "搜索结果所属请求或版本已变化"))
+    bounded = spec.hard_filters.start is not None or spec.hard_filters.end is not None
+    require(result.time_filter.applied == bounded, "result is missing time-filter disclosure")
+    require(set(result.coverage.source_ids) <= set(spec.authorized_source_ids),
+            "result coverage exceeds authorized scope")

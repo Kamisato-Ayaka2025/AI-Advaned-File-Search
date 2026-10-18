@@ -4,6 +4,7 @@ from typing import Literal
 
 from .base import Contract, natural, nonempty, require, time_range, unique
 from .common import SnapshotRef
+from .messages import TimeFilterInfo
 from .data import CharSpan, Coverage
 
 Stage = Literal["problem", "attempt", "solution", "verification"]
@@ -132,6 +133,7 @@ class SearchResult(Contract):
     hits: tuple[SearchHit, ...]
     coverage: Coverage = field(default_factory=Coverage)
     truncated: bool = False
+    time_filter: TimeFilterInfo = field(default_factory=TimeFilterInfo)
 
     def __post_init__(self):
         Contract.__post_init__(self)
@@ -149,11 +151,13 @@ class MessageEdge(Contract):
     provenance: str
     revision: str
     unresolved: bool = False
+    external_target: bool = False
 
     def __post_init__(self):
         Contract.__post_init__(self)
         nonempty(self.from_id, self.provenance, self.revision)
         require(self.unresolved == (self.to_id is None), "unresolved edge requires null target")
+        require(not self.external_target or not self.unresolved, "unresolved edge cannot be external")
         if self.to_id is not None:
             nonempty(self.to_id)
 
@@ -191,8 +195,9 @@ class EvidenceBundle(Contract):
         for edge in self.edge_provenance:
             require(edge.revision == self.snapshot.dataset_revision, "edge revision mismatch")
             require(edge.from_id in self.message_ids, "edge origin outside bundle")
-            require(edge.to_id is None or edge.to_id in self.message_ids,
-                    "resolved edge target outside bundle")
+            if edge.to_id is not None:
+                require(edge.external_target == (edge.to_id not in self.message_ids),
+                        "external target flag differs from bundle membership")
 
 
 @dataclass(frozen=True, slots=True, repr=False)

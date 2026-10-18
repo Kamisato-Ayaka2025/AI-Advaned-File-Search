@@ -10,9 +10,9 @@ import json
 from typing import Literal
 from urllib.parse import quote
 
-from .base import Contract, nonempty, utc as _utc
+from .base import Contract, natural, nonempty, require, time_range, utc as _utc
 
-CONTRACT_VERSION = "0.2.0-draft"
+CONTRACT_VERSION = "0.3.0-draft"
 
 
 def stable_message_id(
@@ -98,7 +98,8 @@ class Message(Contract):
     def matches_time_range(self, start: str | None, end: str | None) -> bool:
         """Exact instants use [start,end); unknown/day times cannot be guessed.
 
-        Date-only filtering needs a separate interval policy reviewed by B/C.
+        Policy exclude_imprecise_v1 excludes date-only values from bounded queries.
+        Services must return TimeFilterInfo so this exclusion is visible.
         Unbounded queries keep all messages, including empty/unknown records.
         """
         lower = _utc(start) if start is not None else None
@@ -111,3 +112,34 @@ class Message(Contract):
             return False
         instant = _utc(self.timestamp)
         return (lower is None or lower <= instant) and (upper is None or instant < upper)
+
+
+@dataclass(frozen=True, slots=True, repr=False)
+class TimeFilterInfo(Contract):
+    """Counts cover authorized hard-filter scope before pagination/ranking."""
+    applied: bool = False
+    excluded_unknown_time_count: int | None = None
+    excluded_date_only_count: int | None = None
+    date_only_policy: Literal["exclude_imprecise_v1"] = "exclude_imprecise_v1"
+
+    def __post_init__(self):
+        Contract.__post_init__(self)
+        for count in (self.excluded_unknown_time_count, self.excluded_date_only_count):
+            if count is not None:
+                natural(count)
+                require(self.applied or count == 0, "unbounded query cannot exclude imprecise time")
+
+
+def filter_message_times(messages: tuple[Message, ...], start: str | None,
+                         end: str | None) -> tuple[tuple[Message, ...], TimeFilterInfo]:
+    """Reference policy: imprecise times stay visible in unbounded queries.
+
+    Never invent an instant or silently claim excluded counts are zero. Production
+    repositories compute the same counts across the full authorized query scope.
+    """
+    time_range(start, end)
+    applied = start is not None or end is not None
+    unknown = sum(m.timestamp_status == "unknown" for m in messages) if applied else 0
+    days = sum(m.timestamp_precision == "day" for m in messages) if applied else 0
+    accepted = tuple(m for m in messages if m.matches_time_range(start, end))
+    return accepted, TimeFilterInfo(applied, unknown, days)
