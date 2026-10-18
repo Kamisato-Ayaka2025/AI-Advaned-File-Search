@@ -11,6 +11,7 @@
 - [requirement.md](requirement.md)：产品范围、REQ-001～REQ-032 与验收标准。
 - [Plan.md](Plan.md)：三人分工、接口契约、并发管理、GitHub 流程、阶段与验收门槛。
 - [AGENTS.md](AGENTS.md)：贡献者与开发代理指南。
+- [QQ 查找实现路线](docs/decisions/ADR-001-qq-search-route.md)：多粒度召回、两轮 Agent 补查、上下文/时间预算及跨时间验收。
 
 ## 三人开发入口
 

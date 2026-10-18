@@ -1,6 +1,6 @@
 # Plan.md — 原话考古软件工程实施计划
 
-- 版本：v1.4；日期：2026-10-18。
+- 版本：v1.5；日期：2026-10-18。
 - 需求基线：`requirement.md` v0.3（实际文件名为小写）；本文不修改原需求的确认状态。
 - 协作仓库：<https://github.com/Kamisato-Ayaka2025/AI-Advaned-File-Search>。
 - 团队：A（高级 Agent：架构、数据与关键机制）、B（低等级 Agent：检索与答案）、C（低等级 Agent：桌面与构建执行）。账号已确认：A = @Kamisato-Ayaka2025，B = @YuanKunlin，C = @Zhong-Yufeng。
@@ -78,6 +78,14 @@ WeFlow、Alpha 以及原资料中缺少完整仓库名的微信底层工具暂�
 5. 隐私与故障：脚本创建明文临时库，仅在正常末尾清理；异常关闭、解密候选失败时连接与临时文件管理未证明可靠。必须补 finally/连接生命周期、启动恢复清理、受限目录与加密持久化策略，覆盖取消、崩溃、磁盘满。环境变量持钥并不等于通过 SecretStore 验收。
 6. 可移植性：脚本实际依赖 sqlcipher3 原生库，不是已经证明可纯 Python 分发的方案。锁定 Windows/Python/驱动版本与上游 revision，补干净环境证据。研究说明与旧 QQBackup 对字段号语义存在差异，须按客户端版本/schema 映射，不能复制一套字段表到所有版本。
 
+### 1.4 QQ 查找路线（v1.5）
+
+解码已有实验依据，下一开发重心是正确快速的查找。选定 [ADR-001](docs/decisions/ADR-001-qq-search-route.md)：本地多粒度混合召回 → 显式关系扩展 → 最多两轮 Agent 补查 → 原文证据回答。
+
+保留本地 bge-small-zh-v1.5，首版不新增本地生成模型或全量 GraphRAG；神经重排与 ANN 经评测再启用。首屏top-10不是全流程候选上限；模型输入、调用数与标准调查截止由程序控制。速度指标是待测目标；百万规模独立验收，deadline返回partial不能算完整回答成功。
+
+新增SR0–SR3/G7。SR0/SR1最小样例可进入六小时演示，完整跨时间调查须另经G7，不用原recall@10替代；不修改G5/G6或原需求基线。ADR定义参数、停止、上下文/授权预算、评测及具体文件职责。
+
 ## 2. 技术基线与目录所有权
 
 采用单进程分层桌面应用；PySide6 Widgets 为界面默认方案，后台工作线程处理磁盘、模型和网络任务；UI 只调用应用服务，不直接执行 SQL 或调用 DeepSeek。
@@ -87,7 +95,7 @@ WeFlow、Alpha 以及原资料中缺少完整仓库名的微信底层工具暂�
 | `src/original_words/contracts/`、`tests/contracts/` | A，B/C 必须评审 | DTO、Protocol、错误码与契约样例；禁止引入 Qt、数据库或模型依赖 |
 | `connectors/`、`storage/`、`migrations/`、`tests/data/` | A | 文件解析、标准化、切段、事务、加密事实库、仓储 API；数据库 schema 只能经 A 迁移 |
 | `retrieval/`、`llm/`、`tests/retrieval/`、`tests/llm/` | B | Embedding、召回融合、重排、查询理解、引用验证、DeepSeek 与后端发送授权校验 |
-| `ui/`、`application/`（除第 3.1 节 A 专属文件）、`tests/ui/`、`tests/integration/` | C | UI、同意交互、应用组装、端到端联调；关键协调/凭据服务由 A 实现 |
+| `ui/`、`application/`（除第 3.1 节及 ADR-001 的 A 专属文件）、`tests/ui/`、`tests/integration/` | C | UI、同意交互、应用组装、端到端联调；关键协调/凭据服务由 A 实现 |
 | `tests/fixtures/` | A | 合成消息与原始格式；B 在 `tests/evaluation/` 维护查询和标注 |
 | `assets/`、`packaging/`、`scripts/`、`.github/` | C | 非敏感静态资源、打包、CI、协作模板 |
 | `pyproject.toml`、依赖锁文件、入口 `__main__.py` | C | 依赖与入口单写者；A/B 在 PR 提交依赖申请，不同时改锁文件 |
@@ -101,7 +109,7 @@ WeFlow、Alpha 以及原资料中缺少完整仓库名的微信底层工具暂�
 - Python 3.11 x64 作为候选基线；P0 在三台 Windows 开发机验证后固定补丁版本、PySide6 和全部依赖，统一锁文件。默认采用 `uv` 管理环境，pytest/pytest-qt 测试，Ruff 格式与静态检查。
 - B 验证 FastEmbed/ONNX Runtime 对 `bge-small-zh-v1.5` 的加载、中文效果和离线缓存；不可用时先记录阻塞，BM25 仅是显式降级，不能替代 Must 向量功能的验收。
 - 中文检索采用统一中文分词后写入 FTS5，查询使用同一分词器与版本；原话字段不得被分词文本覆盖。P0 用两字词、中文整句、文件名和中英混合查询验证；不能假定默认 tokenizer 就能满足中文效果。
-- 向量先保存在受保护的 SQLite 数据中，查询时在内存做精确相似度计算，避免为几千条消息引入独立服务；B 提交性能数据后再决定是否引入向量库。
+- 向量保存在受保护的SQLite中，一万条范围用精确检索作基线；ADR-001规定child粒度、HNSW候选及百万规模独立门槛，不对大规模沿用全量内存假设。
 - A/C 在 P0 验证 SQLCipher 的 Windows Python 驱动、FTS5、迁移、WAL 和打包兼容性。SQLite 默认不等于加密；若该链路未通过，D1 只准使用合成数据，D2 阻塞。
 - A 的凭据服务使用 Windows 用户级保护机制管理密钥；附件和含原文的缓存另行加密，不能只加密 API Key。异常退出时临时文件不得留下明文原话。
 - 默认部署候选为 `pyside6-deploy`；C 在 P0 先打包最小窗口再投入完整界面。P0 记录所需编译器、DLL、模型体积、许可证与无管理员运行结果。
@@ -126,6 +134,10 @@ WeFlow、Alpha 以及原资料中缺少完整仓库名的微信底层工具暂�
 | C-01 / C | P0-01 + mock 服务 | 桌面骨架、导入流程、查询/过滤、结果/时间线/上下文 | 不依赖 A/B 真服务即可点通五个场景；UI 无阻塞操作 | 001、002、009、019、021、022 |
 | C-02 / C（UI），A（安全后端） | B 的发送计划契约；A 的配置/清理接口 | 发送预览、完整/部分选择、同意撤回、Key 设置、隐私提示 | 最终发送内容与预览相同；拒绝和撤回均阻止后续请求 | 024–028 |
 | C-03 / C，A/B 支持 | A/B 核心 PR 合入 | 真实服务组装、打包、Windows 验收与演示录屏 | G3–G5 按交付等级完成，缺陷与限制记录齐全 | 002、007、021、029–031 |
+| SR0 / A主导、B/C消费 | P0-01、A-05结构化契约 | ADR-001搜索DTO、预算、8个合成跨时间事件 | 契约测试、硬过滤/软线索明确 | 013、017–025 |
+| SR1 / B，A提供仓储关系 | B-01、SR0 | 多粒度召回、RRF、批量上下文/回复扩展、首屏计时 | 候选/引用/性能基线；不代替G7 | 015、016、018、019、029 |
+| SR2 / A调度、B适配、C界面 | SR1、B-02、A安全服务 | 两轮调查、阶段证据、授权复核、80题评测 | G7；超时明确partial | 017–025、028–030 |
+| SR3 / A/B/C按ADR | SR2暴露瓶颈才启动 | ANN/可选神经重排、大规模消融 | 扩展规模独立验收 | 015、016、018、029 |
 
 A 对事实库负责，B 对检索和生成负责，C 对交互与集成执行负责，A 对关键跨层机制和集成决策负责。交叉事项由主责提交实现，协作者提供契约和测试，不共同直接编辑同一模块。
 
@@ -143,7 +155,7 @@ A 对事实库负责，B 对检索和生成负责，C 对交互与集成执行�
 
 **重新划分难点，而不是把所有工作堆给 A：**
 
-- A 直接实现 `security/`、`application/task_coordinator.py`、`application/data_lifecycle.py` 的关键机制；C 只做应用入口组装和 UI 调用。后端同意验证、撤回、密钥保护不交给 C 独立设计。
+- A 直接实现 `security/`、`application/task_coordinator.py`、`application/data_lifecycle.py`、`application/search_coordinator.py` 的关键机制；C 只做应用入口组装和 UI 调用。后端同意验证、撤回、密钥保护不交给 C 独立设计。
 - C 维护依赖锁、入口和 CI 的单写职责不变；依赖选型、失败处置与跨模块集成方案由 A 决定。B 的发送适配必须使用 A 的授权网关，不能自行绕过。
 - A 先交付契约、最小仓储、任务协调接口和合成 fixture，再推进复杂适配。B/C 从第一阶段使用这些 fixture 和 mock 并行工作，不等待 A 完成全部功能。
 - A-00/A-04 仍受时间盒约束。加密/一致性未稳定时先暂停新增导出格式，不同时启动 Tier B 研究；避免高级 Agent 成为单点排队瓶颈。
@@ -161,9 +173,9 @@ A 对事实库负责，B 对检索和生成负责，C 对交互与集成执行�
 | `Message` | 需求中的 `message_id/chat_id/chat_type/sender_id/sender_name/timestamp/message_type/content/quote_of/attachment_ref/raw_payload/source_id`，另有 `seq`、`timestamp_status`、`timestamp_precision`、`timestamp_source`、`parse_status`；未知类型保留占位 |
 | ID / 排序 | ID 为带来源命名空间的稳定字符串；优先来源原始 ID，否则使用稳定源标识+会话+原始顺序+内容摘要生成并落库；不能以导入批次/文件路径作为唯一身份；同内容不同原始顺序不得误去重 |
 | 时间 | 有效时间统一 UTC ISO-8601，同时保留来源时区和精度；日期级数据不得伪装成秒级事件；界面按本地时区展示；未知时间为 null 并标记，禁止伪造；有效时间、seq、ID 作稳定排序，未知时间单列且按来源顺序显示 |
-| `Chunk` | `chunk_id/source_id/chat_id/message_ids/start/end/participants/text/dataset_revision`；只在同一会话内切段；默认 30 条、重叠 5 条，后续调整配置必须重建索引 |
+| `Chunk` | `chunk_id/source_id/chat_id/message_ids/start/end/participants/text/dataset_revision`；只在同一会话内切段；parent默认30条、重叠5条；向量child按ADR-001消息数/token上限细分并保留字符区间；配置变化重建索引 |
 | `ImportManifest` / `ImportReport` | `adapter_id/adapter_version/upstream_tool/upstream_version/client_build/export_schema/account_scope/exported_at/snapshot_hash/coverage_start/coverage_end/source_count/read_count/imported_count/duplicate_count/rejected_count/unknown_count/attachment_missing_count/completeness`；无法获知的值为 null，不能当作 0；completeness 为 unknown/partial/verified_for_scope |
-| `SearchRequest` | `request_id/query/filters/top_k/history_ref`；filters 含来源、会话、发送者、时间和类型；默认 top_k=10；时间范围为 `[start,end)`，先转 UTC，未知时间不匹配有界过滤 |
+| `SearchRequest` | `request_id/query/filters/top_k/history_ref`；filters 含来源、会话、发送者、时间和类型；默认 top_k=10仅限制首屏，调查候选/上下文按ADR-001独立预算；时间范围为 `[start,end)`，先转 UTC，未知时间不匹配有界过滤 |
 | `SearchHit` | `chunk_id/message_ids/score/reasons/index_revision`；引用必须来自当前受支持数据版本 |
 | `SendPlan` | `request_id/purpose/mode/payload_hash/selected_message_ids/preview_text/model/endpoint/consent_scope`；查询解析同样属于可外发内容，必须进入预览/授权流程 |
 | `Answer` | `status/claims/citations/timeline/mode`；每条 claim 指向 citation IDs；citation 存稳定 message ID，原文/发送者/时间必须从库读取，不采用模型编造字段 |
@@ -284,6 +296,7 @@ gh pr create --base main
 | G2 模块 | lint、单元/契约测试、模块负责人自查、跨线评审 | 保持 REVIEW/BLOCKED，不合入破坏基线的代码 |
 | G3 集成 | 三种格式各 ≥1000 条；重复导入不增量；8 类标准化边界；抽样 20 段和 10 处上下文；引用端到端定位 | 修复事实数据、契约或 UI 问题后重测相关链路 |
 | G4 演示 | 五个演示场景；断网/无 Key 的 3–5 分钟演示；合成数据标签；Windows 包与录屏；所有未完需求清单 | 不标记 D1 完成；已有包只能标为预览 |
+| G7 跨时间查找（SR2） | ADR-001候选/阶段召回、完整链、错配率、原文支持、预算及p95；80题按事件拆分；外发仍受G5 | 未通过不宣传完整过程还原；扩展规模另验收 |
 | G6 外部格式兼容（逐适配器） | 锁定版本/schema、只读前后哈希、字段映射、计数对账、重复与跨工具 ID 测试、缺附件/异常数据、上游失效后历史仍可搜索；实际授权样例与合成测试分列 | 该格式不标 supported，保留通用导入；不阻塞 G4，真实导出使用仍须 G5 |
 | G5 真实数据/完整质量 | 发送授权与网络拦截证据、库/WAL/索引/附件加密、日志审计、删除重启、性能及人工评测、干净 Win11 安装和 Win10 启动验证 | 真实数据模式关闭；缺陷归责并补证据，不降低原需求 |
 
@@ -339,9 +352,9 @@ C 在 P0 创建项目配置、脚本与真实命令，并回写 README。不要�
 | REQ-015 | B/A | B-01/A-03 | FTS/向量、重建/增量一致 |
 | REQ-016 | B | B-01 | 本地模型、离线、缺模型 |
 | REQ-017 | B | B-02 | 20 题 ≥80% |
-| REQ-018 | B | B-01 | recall@10、负例、融合重排 |
-| REQ-019 | A/C | A-02/C-01 | 前后各 10 条、引用定位 |
-| REQ-020 | B | B-02/B-03 | 10 题人工可追溯/冲突 |
+| REQ-018 | B/A | B-01/SR1/SR2 | 原recall@10 + G7跨时间召回/完整链 |
+| REQ-019 | A/B/C | A-02/C-01/SR1 | 前后各10条+跨时间显式关系扩展 |
+| REQ-020 | B/A | B-02/B-03/SR2 | 原人工评测 + G7阶段证据/误串事件 |
 | REQ-021 | C | C-01/C-03 | 时间线/应用内跳转 |
 | REQ-022 | B/C | B-01/C-01 | 10 组组合；高级 UI 可延后，基本范围不可丢 |
 | REQ-023 | B/C | B-03；P4 后续 | 5 条歧义最多追问一次；待确认；不阻塞普通后续提问 |
@@ -350,7 +363,7 @@ C 在 P0 创建项目配置、脚本与真实命令，并回写 README。不要�
 | REQ-026 | A/C/B | A-03/C-02/G5 | 加密、访问控制、无未授权外发 |
 | REQ-027 | A/C | A-03/C-02；P4 后续 | 导出可读；真实数据模式前完成删除 |
 | REQ-028 | C（A/B 配合） | A-03/B-03/C-02 | 脱敏日志/诊断审查 |
-| REQ-029 | B/C | C-03/G5 | 1 万条基准及内存/网络指标 |
+| REQ-029 | A/B/C | C-03/G5/SR1–SR3 | 一万条基准；首屏与完整回答分计时；百万规模另测 |
 | REQ-030 | B/C/A | A-03/B-03/C-03 | 故障注入/降级 |
 | REQ-031 | C（A/B 配合） | 三线→C-03 | 合成数据、离线、3–5 分钟演示 |
 | REQ-032 | A/C | P5 | 多源隔离/跨源标注，待确认 |

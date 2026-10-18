@@ -23,6 +23,7 @@
 /src/original_words/application/ @Zhong-Yufeng
 /src/original_words/application/task_coordinator.py @Kamisato-Ayaka2025
 /src/original_words/application/data_lifecycle.py @Kamisato-Ayaka2025
+/src/original_words/application/search_coordinator.py @Kamisato-Ayaka2025
 /src/original_words/__main__.py @Zhong-Yufeng
 /tests/ui/ @Zhong-Yufeng
 /tests/integration/ @Zhong-Yufeng
