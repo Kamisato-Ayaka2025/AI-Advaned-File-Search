@@ -230,6 +230,43 @@ python wechat4_export_md.py --plain ./plain --out ./md --me <own_wxid>
 
 **微信图片的已知限制**：`msg/attach/<会话md5>/<yyyy-mm>/Img/<id>.dat` 是 `wxgf` 私有容器（内含 HEVC），既不是标准图片，其 `<id>` 也不来自消息 XML 中任何可哈希字段（140 条样本、md5/fileid/cdnurl/aeskey 全部 0 命中）。因此暂时保留 `🖼 图片` 占位，不做伪链接。要真正内联渲染，需要实现 `wxgf → 标准图片` 的解码器。
 
+
+### 7.3 aimem 端到端验证（P0）
+
+| 检查 | 结果 |
+| --- | --- |
+| QQ 导入 | 2 234 条，与源一致 |
+| 微信导入 | 19 159 条，与源一致 |
+| 合计 | 87 会话 / 21 393 条，全部为 `message` 单元 |
+| 重复导入 | `embedded=0`，总数不变（按消息身份去重） |
+| 文件链接 | 195/195 可访问 |
+
+**已发现的限制**：改动消息正文后再导入，`embedded=0` 且总数不变——aimem 按消息身份去重，**不会刷新已存在消息的内容**。因此更新导出后如需刷新正文，得走 `--force` 或先清库；纯文本检索不受影响。
+
+### 7.4 微信图片关联（P1，关联打通、解码未打通）
+
+早期判断有误，更正两点：
+
+1. `07 08 56 32 08 07 00 04` 是**图片缓存的 V2 加密封装头**，不是 WXGF/HEVC 本体。第一层应解 V2 外层，第二层再判断 JPEG/PNG/WXGF。
+2. 文件名不该用消息 XML 里的字段去哈希猜。微信 4.x 有专门的 `hardlink/hardlink.db`：
+   `image_hardlink_info_v4(md5, file_name, dir1, dir2, type)` + `dir2id(rowid → username)`。
+
+按 hardlink 关联的实测：
+
+| 指标 | 结果 |
+| --- | --- |
+| 图片消息总数 | 879 |
+| hardlink 命中且文件存在 | **521**（verified_path） |
+| 命中但文件已删 | 9（path_missing） |
+| 无 hardlink 记录 | 349（unlinked） |
+| 路径规则 | `msg/attach/<dir1>/<dir2>/Img/<file_name>` |
+
+消息 XML 的 `md5` 与 hardlink 的 `md5` 列**直接相等**，据此可精确关联到消息（`local_id` / `server_id`），不再依赖时间或文件名猜。
+
+新增 [`wechat_media_index.py`](./wechat_media_index.py)，输出 `wechat-media-index.jsonl`，每条含 `conversation_id`、`message_id`、`server_id`、`md5`、`source_path`、`match_status`、`decode_status`，遵循“只有验证过的关联才算事实”的原则。
+
+**仍未打通**：V2 外层解密。用消息里的 `aeskey`（16 字节）配合 AES-CBC/ECB 枚举头部偏移 0–32 均未得到标准图片魔数，说明外层还有额外结构（XOR/分段）。这是下一步的独立课题，不影响文本检索。
+
 ## 8. 在另一台电脑上复用
 
 ```text
@@ -343,3 +380,4 @@ python wechat4_export_md.py --plain ./plain --out ./md --me <own_wxid>
 - [`wechat4_decrypt.py`](./wechat4_decrypt.py)
 - [`wechat4_export_md.py`](./wechat4_export_md.py)
 - [`validate_format.py`](./validate_format.py)（按契约校验导出目录）
+- [`wechat_media_index.py`](./wechat_media_index.py)（消息 → 媒体文件关联索引）

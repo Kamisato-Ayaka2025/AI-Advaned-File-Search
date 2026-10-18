@@ -174,7 +174,7 @@ def render(base, text, app_subtype):
         icon = APP_ICONS.get(sub, "🔗")
         if sub == 6 and title and title in FILE_INDEX:
             rel = os.path.relpath(FILE_INDEX[title], OUT).replace(os.sep, "/")
-            return f"📎 [{title}](<{rel}>)"
+            return f"📎 [{title}](<../{rel}>)"   # files live one level below OUT
         label = title or des or "应用消息"
         if des and des != title and len(des) < 60:
             label += f"（{des}）"
