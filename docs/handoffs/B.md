@@ -91,3 +91,10 @@
 6. **`AnswerService.generate` 尚未接 A 的 `ConsentService.consume`**：B 已有 `to_contract_send_plan` 和精确 preview；完整 `AnswerService` 适配（consume → 发送原样字节 → hydrate citations）仍待 B-02 下一步实现。当前 `DeepSeekClient` 仍保留内部 `Authorization` 测试替身，不冒充 A 的授权服务。
 7. **`Answer` 缺 `request_id` / `clarification`**（与 C 的 B2 一致）：`AnswerService.generate` 返回 `Answer`，迟到结果无法按 request_id 丢弃；REQ-023 的追问文案只能放在 `ambiguous` 状态但无处承载。建议 `Answer` 增 `request_id` 和 `clarification`，或让 `generate` 返回 `SearchOutcome`。
 8. **`SendPlan` 未绑定证据快照/摘要**（与 C 的 B5 一致）：`prepare_send` 与 `generate` 两次传 `evidence`，但 plan 里没有 `snapshot`/`evidence_digest`，无法在 DTO 层发现“预览是 revision A、发送是 revision B”。建议 plan 增 `snapshot` 或 `evidence_digest` 并在 `consume`/`generate` 校验。
+
+### 对 C 评审（B1–B5）的回应
+
+- **同意 C 的 B2/B4/B5**：`Answer.request_id/clarification`、日期级过滤策略、`SendPlan` 证据版本绑定都列入 B 侧阻塞；B 的 `test_gap_*` 已覆盖 B2/B5。
+- **C 的 B1（ChatSummary/list_chats）与 B3（ImportIssue）属 A 的存储/导入契约**：B 不阻塞其设计；B 会消费 `ChatSummary` 显示会话名，并接受 `ImportIssue` 作为覆盖/质量提示的来源，不自行扫描全库枚举会话。
+- **C 的 S10（SearchHit 不含文本）与 B 的 hydration 缺口一致**：B 接受 `Repository.get_chunks` 二次取文本/字符区间的路径，但请 A 在契约说明中写明这是 C 的正式消费方式。
+- **C 的基线过期提醒**：B 评审分支基于 `pr-2` 的 `a333994`；A 更新 main 后 B 会重新合并并重跑，不沿用旧基线绿色结果。
