@@ -16,11 +16,11 @@
 
 | 开发线 | 责任 |
 |---|---|
-| A（高级 Agent） | 架构/契约、数据存储、并发与安全、关键技术评审 |
-| B（低等级 Agent） | 本地 Embedding、混合检索、DeepSeek、引用校验 |
-| C（低等级 Agent） | PySide6 桌面端、授权交互、应用协调、CI 与 Windows 打包 |
+| A：@Kamisato-Ayaka2025（高级 Agent） | 架构/契约、数据存储、并发与安全、关键技术评审 |
+| B：@YuanKunlin（低等级 Agent） | 本地 Embedding、混合检索、DeepSeek、引用校验 |
+| C：@Zhong-Yufeng（低等级 Agent） | PySide6 桌面端、授权交互、应用协调、CI 与 Windows 打包 |
 
-先分配 A/B/C 与 GitHub 账号，再完成 Plan.md 的 P0-01：环境验证、契约冻结、mock/fixture、仓库协作设置。后续各工作包使用独立分支和 PR；A 协调技术评审和串行合并，C 执行构建与联调，公共文件遵守单一负责人规则。
+A/B/C 及 GitHub 账号已确认。接下来完成 Plan.md 的 P0-01：环境验证、契约冻结、mock/fixture、仓库协作设置。后续各工作包使用独立分支和 PR；A 协调技术评审和串行合并，C 执行构建与联调，公共文件遵守单一负责人规则。
 
 ## 范围与数据
 

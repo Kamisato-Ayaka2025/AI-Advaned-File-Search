@@ -1,0 +1,38 @@
+# A: @Kamisato-Ayaka2025; B: @YuanKunlin; C: @Zhong-Yufeng
+# Later matching rules take precedence. Owners do not grant permissions.
+# Shared contracts still require all affected parties per Plan.md.
+# A must not self-approve; independent review is specified in Plan.md.
+* @Kamisato-Ayaka2025
+
+/src/original_words/connectors/ @Kamisato-Ayaka2025
+/src/original_words/storage/ @Kamisato-Ayaka2025
+/src/original_words/migrations/ @Kamisato-Ayaka2025
+/src/original_words/contracts/ @Kamisato-Ayaka2025
+/src/original_words/security/ @Kamisato-Ayaka2025
+/tests/contracts/ @Kamisato-Ayaka2025
+/tests/data/ @Kamisato-Ayaka2025
+/tests/fixtures/ @Kamisato-Ayaka2025
+
+/src/original_words/retrieval/ @YuanKunlin
+/src/original_words/llm/ @YuanKunlin
+/tests/retrieval/ @YuanKunlin
+/tests/llm/ @YuanKunlin
+/tests/evaluation/ @YuanKunlin
+
+/src/original_words/ui/ @Zhong-Yufeng
+/src/original_words/application/ @Zhong-Yufeng
+/src/original_words/application/task_coordinator.py @Kamisato-Ayaka2025
+/src/original_words/application/data_lifecycle.py @Kamisato-Ayaka2025
+/src/original_words/__main__.py @Zhong-Yufeng
+/tests/ui/ @Zhong-Yufeng
+/tests/integration/ @Zhong-Yufeng
+/assets/ @Zhong-Yufeng
+/packaging/ @Zhong-Yufeng
+/scripts/ @Zhong-Yufeng
+/.github/ @Zhong-Yufeng
+/pyproject.toml @Zhong-Yufeng
+/uv.lock @Zhong-Yufeng
+
+/docs/handoffs/A.md @Kamisato-Ayaka2025
+/docs/handoffs/B.md @YuanKunlin
+/docs/handoffs/C.md @Zhong-Yufeng
