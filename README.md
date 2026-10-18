@@ -16,11 +16,11 @@
 
 | 开发线 | 责任 |
 |---|---|
-| A | 文件导入、标准化、SQLite、切段、持久化与加密 |
-| B | 本地 Embedding、混合检索、DeepSeek、引用校验 |
-| C | PySide6 桌面端、授权交互、应用协调、CI 与 Windows 打包 |
+| A（高级 Agent） | 架构/契约、数据存储、并发与安全、关键技术评审 |
+| B（低等级 Agent） | 本地 Embedding、混合检索、DeepSeek、引用校验 |
+| C（低等级 Agent） | PySide6 桌面端、授权交互、应用协调、CI 与 Windows 打包 |
 
-先分配 A/B/C 与 GitHub 账号，再完成 Plan.md 的 P0-01：环境验证、契约冻结、mock/fixture、仓库协作设置。后续各工作包使用独立分支和 PR；C 串行协调合并，公共文件遵守单一负责人规则。
+先分配 A/B/C 与 GitHub 账号，再完成 Plan.md 的 P0-01：环境验证、契约冻结、mock/fixture、仓库协作设置。后续各工作包使用独立分支和 PR；A 协调技术评审和串行合并，C 执行构建与联调，公共文件遵守单一负责人规则。
 
 ## 范围与数据
 
