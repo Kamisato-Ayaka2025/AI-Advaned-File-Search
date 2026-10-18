@@ -61,3 +61,29 @@
 - 不继续微信探测；QQ 解码经验只做交接，不产品化。
 - 不把本地生成模型作为 B-02 依赖；DeepSeek 是唯一 LLM。
 - 不提交真实聊天、密钥、运行数据库、模型权重。
+
+## 契约 0.2.0-draft B 侧评审（PR #2）
+
+基于 `pr-2`（A 的 `codex/p0-a-message-contract`）合并 B-01/B-02 后，新增：
+
+- `src/original_words/retrieval/contracts_bridge.py`：内部 Message/Chunk/Hit → 契约 DTO；`ContractSearchService` 实现 A 的 `SearchService.parse_local/search`。
+- `src/original_words/llm/contracts_bridge.py`：内部 Citation/Answer/SendPlan → 契约 DTO；Citation 只保留 `message_id + snapshot + char_span`，不带模型生成的原文/发送者/时间。
+- `tests/retrieval/test_contracts_consumption.py`、`tests/llm/test_contracts_consumption.py`：11 个 B 侧消费测试。
+- 结果：B 89 tests + A 52 tests 全过（Python 3.13；A 的 3.11 语法检查仍通过）。
+- 已修正 B-02 的发送预览：`preview_text` 现在是实际 UTF-8 JSON 请求体，`payload_hash = SHA-256(preview_text)`，`_http_post` 发送同一串字节；满足 `SendPlan` 的“完整预览指纹”。
+
+### B 侧确认
+
+- `SearchSpec` 硬过滤不得超出 `authorized_source_ids`；`ContractSearchService.parse_local` 依赖契约校验。
+- `SearchResult` 的 hit 必须共享同一 `index_revision`；B 适配器用 `SnapshotRef.index_revision` 校验。
+- 证据包/引用必须绑定同一 `SnapshotRef`；`validate_answer` 可对 B 的抽取式回答通过。
+- `SendPlan.fingerprint` 会把 purpose/mode/selected/model/endpoint/scope 与完整 preview 一起绑定；编辑后旧 grant 失效。
+
+### 待 A 确认的契约缺口（B 不建议在确认前冻结 v1）
+
+1. **`SearchFilters` 缺 `chat_types`（group/private）**：REQ-022 要求群聊/私聊过滤，目前只能用 `chat_ids` 逐个列，无法表达“只看群聊”。B 内部有 `chat_types`，契约层丢失。
+2. **`SearchFilters.message_types` 缺 `link/voice/emoji`**：B 的规则解析会产出这三类；契约只有 `text/image/file/system/recalled/unknown`。若映射到 `unknown`，用户按“语音/链接”过滤会失效；建议扩枚举或明确降级规则。
+3. **`SearchResult.hits` 不含 `source_id/chat_id/char_spans`**：C 需再用 `Repository.get_chunks(chunk_ids, snapshot, source_ids)` 二次取片段才能展示来源/会话/引用区间。B 测试已验证该路径可行，但请确认这是契约意图，而不是让 C 从 `SearchHit` 猜。
+4. **`Message` 的 `timestamp_source/precision` 来源**：B 内部 `MessageRecord` 只有 epoch，适配器只能推断 `timestamp_source="retrieval-index"`。真实导入必须保留 A 的原始 provenance/精度；B 建议生产路径直接消费 A 的 `Message`，不要用 B 的推断值。
+5. **日期级过滤策略**：A 当前对有界时间过滤保守排除 `precision=day` 的消息；B 可以接受该保守策略用于 v1，但“3 月份”这类查询会漏掉日期级记录。请产品/A 明确是否接受，或增加独立的日期区间策略。
+6. **`AnswerService.generate` 尚未接 A 的 `ConsentService.consume`**：B 已有 `to_contract_send_plan` 和精确 preview；完整 `AnswerService` 适配（consume → 发送原样字节 → hydrate citations）仍待 B-02 下一步实现。当前 `DeepSeekClient` 仍保留内部 `Authorization` 测试替身，不冒充 A 的授权服务。

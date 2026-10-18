@@ -81,9 +81,13 @@ class SendPlan:
     mode: str = "full"
 
 
+def request_body(payload: dict[str, Any]) -> str:
+    """Exact UTF-8 JSON request body used for preview, hash and wire bytes."""
+    return json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+
+
 def payload_hash(payload: dict[str, Any]) -> str:
-    raw = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(raw).hexdigest()
+    return hashlib.sha256(request_body(payload).encode("utf-8")).hexdigest()
 
 
 class DeepSeekClient:
@@ -130,8 +134,8 @@ class DeepSeekClient:
         }
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
-        digest = payload_hash(payload)
-        preview = json.dumps(payload["messages"], ensure_ascii=False, indent=2)
+        preview = request_body(payload)
+        digest = hashlib.sha256(preview.encode("utf-8")).hexdigest()
         return SendPlan(
             request_id=request_id,
             purpose=purpose,
@@ -163,7 +167,7 @@ class DeepSeekClient:
                 if self.transport is not None:
                     response = self.transport(self.endpoint, self._headers(), plan.payload, self.timeout)
                 else:
-                    response = self._http_post(plan.payload)
+                    response = self._http_post(plan.preview_text)
                 if not isinstance(response, dict):
                     raise InvalidResponse()
                 return response
@@ -241,8 +245,8 @@ class DeepSeekClient:
             "Authorization": f"Bearer {self.api_key or ''}",
         }
 
-    def _http_post(self, payload: dict[str, Any]) -> dict[str, Any]:
-        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    def _http_post(self, body_text: str) -> dict[str, Any]:
+        body = body_text.encode("utf-8")
         request = urllib.request.Request(
             self.endpoint,
             data=body,
