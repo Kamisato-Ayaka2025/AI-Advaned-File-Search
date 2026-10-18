@@ -76,7 +76,7 @@ def main():
         if ext in ("jpg", "png", "gif", "webp"):
             p = out / f"{md5}.{ext}"
             p.write_bytes(plain)
-            mapping[md5] = str(p)
+            mapping[md5] = str(p.resolve())
         elif ext == "wxgf":
             i = plain.find(b"\x00\x00\x00\x01")
             if i < 0:
@@ -90,7 +90,7 @@ def main():
                                capture_output=True)
             tmp.unlink(missing_ok=True)
             if r.returncode == 0 and png.exists():
-                mapping[md5] = str(png)
+                mapping[md5] = str(png.resolve())
                 stats["wxgf_ok"] = stats.get("wxgf_ok", 0) + 1
             else:
                 stats["wxgf_fail"] = stats.get("wxgf_fail", 0) + 1
