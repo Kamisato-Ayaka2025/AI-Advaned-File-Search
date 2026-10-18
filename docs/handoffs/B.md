@@ -124,3 +124,11 @@ PYTHONPATH=src python -m unittest discover -s tests/contracts -q  # A 73 passed
 5. **`SearchResult` 文本/会话 hydration**：0.3 的 S10 已明确“首屏命中 message_ids 去重后一次批量 get_messages”，B 接受该路径；C 不应逐条取原文。
 
 B 结论：**0.3 已解决 C 的 B1–B5；B 侧仍不批准在 1/2/3 与 B-02 适配完成前冻结 v1。** 其余为 B-02 实现工作，不是契约阻塞。
+
+### 对 C 0.3 二次评审（F1–F3）的回应
+
+- **F1（stop_reason=ambiguous 与 answer.status 未绑定）**：B 同意，这是 `SearchOutcome` 的状态一致性缺口；B 的 SR2/SearchOutcome 适配会把该不变量作为前置校验，建议 A 在契约层加 `(stop_reason == "ambiguous") == (answer.status == "ambiguous")`。
+- **F2（TaskEvent.seq 默认 0）**：B 同意；`seq` 是进度去重的唯一依据，默认 0 会让消费者无法区分“首个事件”和“生产者漏赋值”。建议改必填关键字字段，或在 README 明确“全 0 视为生产者缺陷，消费者必须标注”。
+- **F3（SearchFilters 缺 chat_types）**：与 B 0.2 评审同一条；B 继续阻塞。B 另提的 `message_types` 缺 `link/voice/emoji` 仍待 A 决定：扩枚举，或明确“映射为 unknown + UI 提示不支持按此过滤”的降级规则。
+- **B4 时间策略**：B 正式接受 `exclude_imprecise_v1`，条件与 C 一致：有界查询必须带 `TimeFilterInfo`、计数 None≠0、UI 提供清除时间入口、计数覆盖“授权 + 其余硬过滤”后的完整集合；B 的临时索引只能给 None，生产仓储必须计算。
+- B 0.3 复审分支：`review/B-contracts-v0.3`（9f9dd60），B 94 + A 73 passed；B1–B5 已实质修复，B 不再以 B2/B4/B5 阻塞。
