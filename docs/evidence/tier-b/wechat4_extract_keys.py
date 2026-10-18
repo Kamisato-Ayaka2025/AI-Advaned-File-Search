@@ -160,6 +160,10 @@ def main():
                     break
     json.dump(keys, open(a.out, "w"))
     print(f"[VERIFY] verified={len(keys)}/{total} -> {a.out}")
+    if total and not keys:
+        print("[HINT] 0 keys: check that the account directory belongs to the account "
+              "currently logged in; WeChat rewrites every .db on upgrade, so choosing a "
+              "directory by modification time picks the wrong account.")
 
 
 if __name__ == "__main__":
