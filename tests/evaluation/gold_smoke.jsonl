@@ -1,0 +1,5 @@
+{"query": "旧版本报价", "relevant_message_ids": ["a1"], "split": "dev", "kind": "fuzzy_memory"}
+{"query": "最终版报价单", "relevant_message_ids": ["a3"], "split": "dev", "kind": "exact_file"}
+{"query": "显卡过热", "relevant_message_ids": ["b1"], "split": "dev", "kind": "content"}
+{"query": "换供应商", "relevant_message_ids": ["c1"], "split": "dev", "kind": "decision"}
+{"query": "不存在的关键词zzz", "relevant_message_ids": [], "split": "dev", "kind": "no_evidence"}
