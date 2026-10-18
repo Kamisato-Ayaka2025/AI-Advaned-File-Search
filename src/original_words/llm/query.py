@@ -373,3 +373,65 @@ def _intent(query: str) -> str:
     if re.search(r"怎么|为什么|如何|过程|谁最先|谁先", query):
         return "process"
     return "search"
+
+
+def apply_llm_query(rule: QuerySpec, data: dict) -> QuerySpec:
+    """Merge validated LLM slots into the rule spec.
+
+    Explicit rule constraints (hard date, chat, sender) win over the model.
+    A hedged rule time stays soft even if the model proposes a range: the model
+    may enrich semantics and fill missing slots, but it cannot turn a guess into
+    a permission/date constraint.
+    """
+    from ..retrieval.text import parse_timestamp
+
+    filters = data.get("filters") if isinstance(data.get("filters"), dict) else {}
+    rule_hard_time = rule.filters.time_start is not None or rule.filters.time_end is not None
+    rule_soft_time = "time_text" in rule.soft_hints
+
+    time_start = rule.filters.time_start
+    time_end = rule.filters.time_end
+    soft = dict(rule.soft_hints)
+    llm_start = parse_timestamp(filters.get("time_start"))
+    llm_end = parse_timestamp(filters.get("time_end"))
+    if not rule_hard_time and llm_start is not None and llm_end is not None:
+        if rule_soft_time:
+            soft["llm_time_range"] = (llm_start, llm_end)
+        else:
+            time_start, time_end = llm_start, llm_end
+
+    def values(key: str) -> tuple[str, ...]:
+        raw = filters.get(key)
+        if not isinstance(raw, list):
+            return ()
+        return tuple(str(value) for value in raw if value)
+
+    sources = rule.filters.sources or values("sources")
+    chat_ids = rule.filters.chat_ids or values("chat_ids")
+    sender_ids = rule.filters.sender_ids or values("sender_ids")
+    message_types = rule.filters.message_types or values("message_types")
+
+    semantic = str(data.get("semantic") or "").strip() or rule.semantic
+    raw_keywords = data.get("keywords")
+    keywords = (
+        tuple(str(value) for value in raw_keywords if value)
+        if isinstance(raw_keywords, list) and raw_keywords
+        else rule.keywords
+    )
+    intent = data.get("intent") if data.get("intent") in {"search", "yesno", "process"} else rule.intent
+    return QuerySpec(
+        raw=rule.raw,
+        semantic=semantic,
+        keywords=keywords,
+        filters=SearchFilters(
+            sources=sources,
+            chat_ids=chat_ids,
+            sender_ids=sender_ids,
+            message_types=message_types,
+            time_start=time_start,
+            time_end=time_end,
+        ),
+        soft_hints=soft,
+        intent=intent,
+        confidence=max(rule.confidence, 0.6),
+    )

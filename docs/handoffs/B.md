@@ -18,7 +18,7 @@
 
 ### B-02 查询理解与答案
 
-- `llm/query.py`：规则解析时间（今天/昨天/上周/上周三/最近 N 天/月份/ISO 日期）、人物、会话、来源、消息类型；硬过滤 vs 软线索；意图。
+- `llm/query.py`：规则解析时间（今天/昨天/上周/上周三/最近 N 天/月份/ISO 日期）、人物、会话、来源、消息类型；硬过滤 vs 软线索；意图；`apply_llm_query` 合并 LLM 槽位（显式规则优先，hedged 时间仍为软线索）。
 - `llm/deepseek.py`：`prepare_send` 只生成 payload 与 hash；`generate` 必须收到 A 的授权且 hash 匹配；无 Key/429/401 的错误映射；JSON 输出校验。
 - `llm/answer.py`：引用校验（message_id、字符区间、原文、revision、发送者/时间可选）、抽取式无网络回答、`answer_from_json`。
 - 无证据时返回 `not_found`，不生成补足。
@@ -30,7 +30,7 @@
 /home/ykl/AI-Advaned-File-Search/.venv/bin/python -m pytest -q tests/retrieval tests/llm
 ```
 
-75 passed（B-01 35 + B-02 40），覆盖 CJK 两字查询、向量改写、过滤、去重、上下文、引用扩展、时间解析、无授权零网络、引用伪造拒收、搜索→回答端到端。
+78 passed（B-01 35 + B-02 43），覆盖 CJK 两字查询、向量改写、过滤、去重、上下文、引用扩展、时间解析、无授权零网络、引用伪造拒收、搜索→回答端到端。
 
 ## 临时边界（待 A 的 contracts v1 替换）
 

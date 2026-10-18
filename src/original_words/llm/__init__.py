@@ -23,7 +23,7 @@ from .deepseek import (
     validate_answer_json,
     validate_query_json,
 )
-from .query import QuerySpec, RuleQueryParser
+from .query import QuerySpec, RuleQueryParser, apply_llm_query
 
 __all__ = [
     "Answer",
@@ -40,6 +40,7 @@ __all__ = [
     "ModelUnavailable",
     "QuerySpec",
     "RuleQueryParser",
+    "apply_llm_query",
     "SendPlan",
     "answer_from_json",
     "answer_to_dict",

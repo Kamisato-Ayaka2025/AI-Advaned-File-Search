@@ -91,3 +91,51 @@ def test_empty_query():
     assert spec.raw == ""
     assert spec.semantic == ""
     assert spec.filters.time_start is None
+
+
+def test_llm_cannot_override_explicit_hard_time():
+    from original_words.llm.query import apply_llm_query
+
+    rule = parser().parse("上周的报价", now=NOW)
+    merged = apply_llm_query(
+        rule,
+        {
+            "semantic": "报价",
+            "filters": {"time_start": "2025-10-14T00:00:00+08:00", "time_end": "2025-10-15T00:00:00+08:00"},
+        },
+    )
+    assert merged.filters.time_start == ts(2025, 10, 6)
+    assert merged.filters.time_end == ts(2025, 10, 13)
+
+
+def test_llm_time_stays_soft_when_rule_was_hedged():
+    from original_words.llm.query import apply_llm_query
+
+    rule = parser().parse("好像三月份讨论过退款", now=NOW)
+    merged = apply_llm_query(
+        rule,
+        {
+            "semantic": "退款",
+            "filters": {"time_start": "2025-03-01T00:00:00+08:00", "time_end": "2025-04-01T00:00:00+08:00"},
+        },
+    )
+    assert merged.filters.time_start is None
+    assert merged.soft_hints["llm_time_range"] == (ts(2025, 3, 1), ts(2025, 4, 1))
+    assert merged.semantic == "退款"
+
+
+def test_llm_fills_missing_filters_but_rule_wins():
+    from original_words.llm.query import apply_llm_query
+
+    rule = parser().parse("张经理的报价", now=NOW)
+    merged = apply_llm_query(
+        rule,
+        {
+            "semantic": "报价单",
+            "filters": {"sender_ids": ["u9"], "chat_ids": ["chat-a"]},
+            "intent": "search",
+        },
+    )
+    assert merged.filters.sender_ids == ("u1",)
+    assert merged.filters.chat_ids == ("chat-a",)
+    assert merged.semantic == "报价单"
